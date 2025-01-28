@@ -325,6 +325,64 @@ const deleteCustomerInfo = async (req, res, next) => {
     }
 };
 
+const getLocationsWithCoupons = async (req, res, next) => {
+    try {
+        const db = req.app.locals.db;
+        const { latitude, longitude, range = 5, expiringSoon, couponType } = req.query;
+
+        if (!latitude || !longitude) {
+            return res.status(400).json({ error: 'Latitude and longitude are required.' });
+        }
+
+        // Convert range from kilometers to meters
+        const rangeInMeters = parseFloat(range) * 1000;
+
+        // Find locations within the specified range
+        const locations = await db.collection('locations').find({
+            geolocation: {
+                $near: {
+                    $geometry: {
+                        type: "Point",
+                        coordinates: [parseFloat(longitude), parseFloat(latitude)]
+                    },
+                    $maxDistance: rangeInMeters
+                }
+            }
+        }).toArray();
+
+        // Retrieve active coupons for each location
+        const locationIds = locations.map(loc => loc._id);
+        const couponFilter = {
+            locationId: { $in: locationIds },
+            isActive: true
+        };
+
+        if (expiringSoon) {
+            couponFilter.expiryDate = { $lt: new Date(new Date().getTime() + 24 * 60 * 60 * 1000) }; // Expiring within 24 hours
+        }
+
+        if (couponType) {
+            couponFilter.type = couponType;
+        }
+
+        const coupons = await db.collection('coupons').find(couponFilter).toArray();
+
+        // Group coupons by location
+        const result = locations.map(location => {
+            const locationCoupons = coupons.filter(coupon => coupon.locationId.equals(location._id));
+            return {
+                ...location,
+                coupons: locationCoupons
+            };
+        });
+
+        res.status(200).json(result);
+    } catch (err) {
+        next(err);
+    }
+};
+
+
 module.exports = {
     addLocation,
     updateLocation,
@@ -345,5 +403,6 @@ module.exports = {
     deleteCustomerInfo,
     deleteCoupon,
     updateCoupon,
-    getCouponsByLocationId
+    getCouponsByLocationId,
+    getLocationsWithCoupons
 };
