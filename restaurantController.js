@@ -98,6 +98,22 @@ const generateCoupon = async (req, res, next) => {
     }
 };
 
+// Get all coupons for a specific location
+const getCouponsByLocationId = async (req, res, next) => {
+    try {
+        const db = req.app.locals.db;
+        const locationId = req.params.locationId;
+
+        // Find all coupons for the given location ID
+        const coupons = await db.collection('coupons').find({ locationId: new ObjectId(locationId) }).toArray();
+
+        res.status(200).json(coupons);
+    } catch (err) {
+        next(err);
+    }
+};
+
+
 // Activate coupon
 const activateCoupon = async (req, res, next) => {
     try {
@@ -328,5 +344,6 @@ module.exports = {
     updateCustomerInfo,
     deleteCustomerInfo,
     deleteCoupon,
-    updateCoupon
+    updateCoupon,
+    getCouponsByLocationId
 };

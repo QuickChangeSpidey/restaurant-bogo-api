@@ -20,6 +20,7 @@ const {
     storeCustomerInfo,
     updateCustomerInfo,
     deleteCustomerInfo,
+    getCouponsByLocationId
 } = require('./restaurantController');
 
 const router = express.Router();
@@ -38,6 +39,7 @@ router.put('/coupons/:id', checkAuth, checkRole('Restaurant'), updateCoupon);
 router.delete('/coupons/:id', checkAuth, checkRole('Restaurant'), deleteCoupon);
 router.patch('/coupons/:id/activate', checkAuth, checkRole('Restaurant'), activateCoupon);
 router.patch('/coupons/:id/deactivate', checkAuth, checkRole('Restaurant'), deactivateCoupon);
+router.get('/coupons/:locationId', getCouponsByLocationId);
 
 router.post('/ads', checkAuth, checkRole('Restaurant'), addAd);
 router.put('/ads/:id', checkAuth, checkRole('Restaurant'), updateAd);
