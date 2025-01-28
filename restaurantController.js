@@ -80,13 +80,55 @@ const deleteMenuItem = async (req, res, next) => {
     }
 };
 
-// Generate coupon
+// Coupon generator
 const generateCoupon = async (req, res, next) => {
     try {
-        const coupon = new Coupon({
-            ...req.body,
-            locationId: req.body.locationId,
-        });
+        const { type, locationId, ...fields } = req.body;
+
+        switch (type) {
+            case 'BOGO':
+                if (!fields.comboItems || fields.comboItems.length < 1) {
+                    return res.status(400).json({ error: 'BOGO deals require at least one item.' });
+                }
+                break;
+
+            case 'FreeItem':
+                if (!fields.freeItemId || !fields.minimumSpend) {
+                    return res.status(400).json({ error: 'FreeItem deals require a free item and a minimum spend.' });
+                }
+                break;
+
+            case 'FlatDiscount':
+                if (!fields.discountValue || !fields.minimumSpend) {
+                    return res.status(400).json({ error: 'FlatDiscount requires a discount value and minimum spend.' });
+                }
+                break;
+
+            case 'SpendMoreSaveMore':
+                if (!fields.minimumSpend || !fields.discountValue) {
+                    return res.status(400).json({ error: 'SpendMoreSaveMore requires spend threshold and discount value.' });
+                }
+                break;
+
+            case 'ComboDeal':
+            case 'FamilyPack':
+                if (!fields.comboItems || fields.comboItems.length < 2) {
+                    return res.status(400).json({ error: `${type} deals require at least two items.` });
+                }
+                break;
+
+            case 'LimitedTime':
+            case 'HappyHour':
+                if (!fields.startTime || !fields.endTime || !fields.discountValue) {
+                    return res.status(400).json({ error: `${type} deals require start and end times and a discount value.` });
+                }
+                break;
+
+            default:
+                return res.status(400).json({ error: 'Invalid coupon type.' });
+        }
+
+        const coupon = new Coupon({ type, locationId, ...fields });
         const savedCoupon = await coupon.save();
         res.status(201).json(savedCoupon);
     } catch (err) {
@@ -94,61 +136,121 @@ const generateCoupon = async (req, res, next) => {
     }
 };
 
-// Activate coupon
+// Coupon Update
+const updateCoupon = async (req, res, next) => {
+    try {
+        const { type, ...fields } = req.body;
+
+        switch (type) {
+            case 'BOGO':
+                if (!fields.comboItems || fields.comboItems.length < 1) {
+                    return res.status(400).json({ error: 'BOGO deals require at least one item.' });
+                }
+                break;
+
+            case 'FreeItem':
+                if (!fields.freeItemId || !fields.minimumSpend) {
+                    return res.status(400).json({ error: 'FreeItem deals require a free item and a minimum spend.' });
+                }
+                break;
+
+            case 'FlatDiscount':
+                if (!fields.discountValue || !fields.minimumSpend) {
+                    return res.status(400).json({ error: 'FlatDiscount requires a discount value and minimum spend.' });
+                }
+                break;
+
+            case 'SpendMoreSaveMore':
+                if (!fields.minimumSpend || !fields.discountValue) {
+                    return res.status(400).json({ error: 'SpendMoreSaveMore requires spend threshold and discount value.' });
+                }
+                break;
+
+            case 'ComboDeal':
+            case 'FamilyPack':
+                if (!fields.comboItems || fields.comboItems.length < 2) {
+                    return res.status(400).json({ error: `${type} deals require at least two items.` });
+                }
+                break;
+
+            case 'LimitedTime':
+            case 'HappyHour':
+                if (!fields.startTime || !fields.endTime || !fields.discountValue) {
+                    return res.status(400).json({ error: `${type} deals require start and end times and a discount value.` });
+                }
+                break;
+
+            default:
+                return res.status(400).json({ error: 'Invalid coupon type.' });
+        }
+
+        const coupon = await Coupon.findByIdAndUpdate(
+            req.params.id,
+            { $set: { type, ...fields } },
+            { new: true }
+        );
+
+        if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
+
+        res.status(200).json(coupon);
+    } catch (err) {
+        next(err);
+    }
+};
+
+// Activate Coupon 
 const activateCoupon = async (req, res, next) => {
     try {
-        const coupon = await Coupon.findByIdAndUpdate(
-            req.params.id,
-            { $set: { isActive: true } },
-            { new: true }
-        );
+        const coupon = await Coupon.findById(req.params.id);
+
         if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
-        res.status(200).json(coupon);
+
+        if (coupon.isActive) {
+            return res.status(400).json({ error: 'Coupon is already active.' });
+        }
+
+        coupon.isActive = true;
+        await coupon.save();
+
+        res.status(200).json({ message: 'Coupon activated successfully.', coupon });
     } catch (err) {
         next(err);
     }
 };
 
-// Deactivate coupon
+// Deactivate Coupon 
 const deactivateCoupon = async (req, res, next) => {
     try {
-        const coupon = await Coupon.findByIdAndUpdate(
-            req.params.id,
-            { $set: { isActive: false } },
-            { new: true }
-        );
+        const coupon = await Coupon.findById(req.params.id);
+
         if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
-        res.status(200).json(coupon);
+
+        if (!coupon.isActive) {
+            return res.status(400).json({ error: 'Coupon is already inactive.' });
+        }
+
+        coupon.isActive = false;
+        await coupon.save();
+
+        res.status(200).json({ message: 'Coupon deactivated successfully.', coupon });
     } catch (err) {
         next(err);
     }
 };
 
-// Delete coupon
+// Delete Coupon 
 const deleteCoupon = async (req, res, next) => {
     try {
         const coupon = await Coupon.findByIdAndDelete(req.params.id);
+
         if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
-        res.status(200).json({ message: 'Coupon deleted successfully' });
+
+        res.status(200).json({ message: 'Coupon deleted successfully.' });
     } catch (err) {
         next(err);
     }
 };
 
-// Update coupon
-const updateCoupon = async (req, res, next) => {
-    try {
-        const coupon = await Coupon.findByIdAndUpdate(
-            req.params.id,
-            { $set: req.body },
-            { new: true }
-        );
-        if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
-        res.status(200).json(coupon);
-    } catch (err) {
-        next(err);
-    }
-};
 
 // Add ad
 const addAd = async (req, res, next) => {

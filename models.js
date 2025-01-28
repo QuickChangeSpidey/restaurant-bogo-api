@@ -44,12 +44,33 @@ const MenuItemSchema = new mongoose.Schema({
 
 const MenuItem = mongoose.model('MenuItem', MenuItemSchema);
 
-// Coupon Schema
+// Coupon Schema Update
 const CouponSchema = new mongoose.Schema({
     locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
-    type: { type: String, enum: ['Discount', 'FreeItem', 'BOGO', 'Cashback'], required: true },
+    type: {
+        type: String,
+        enum: [
+            'BOGO',
+            'FreeItem',
+            'Discount',
+            'SpendMoreSaveMore',
+            'FlatDiscount',
+            'ComboDeal',
+            'FamilyPack',
+            'LimitedTime',
+            'HappyHour'
+        ],
+        required: true,
+    },
     code: { type: String, unique: true, required: true }, // Unique coupon code
-    discountValue: { type: Number, required: true }, // Discount value or percentage
+    discountValue: { type: Number }, // Discount value or percentage (optional based on type)
+    freeItemId: { type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }, // For FreeItem type
+    comboItems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }], // For Combo or FamilyPack
+    minimumSpend: { type: Number }, // For SpendMoreSaveMore or FlatDiscount
+    maxRedeemValue: { type: Number }, // Optional cap for FlatDiscount
+    portionSize: { type: String }, // For FamilyPack
+    startTime: { type: Date }, // For HappyHour or LimitedTime
+    endTime: { type: Date },
     generationDate: { type: Date, default: Date.now },
     expirationDate: { type: Date, required: true },
     isActive: { type: Boolean, default: true },
