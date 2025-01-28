@@ -4,8 +4,10 @@ const mongoose = require('mongoose');
 const UserSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
+    password: { type: String, required: true }, // For authentication
     role: { type: String, enum: ['Admin', 'Restaurant', 'Customer'], required: true },
-    details: { type: mongoose.Schema.Types.Mixed }, // Flexible details for different user types
+    isActive: { type: Boolean, default: true }, // Track active status
+    details: { type: mongoose.Schema.Types.Mixed },
 }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
@@ -18,10 +20,15 @@ const LocationSchema = new mongoose.Schema({
     address: { type: String, required: true },
     hours: { type: String },
     qrCode: { type: String },
+    geolocation: { // For geospatial queries
+        type: { type: String, default: 'Point', enum: ['Point'] },
+        coordinates: { type: [Number], required: true }, // [longitude, latitude]
+    },
     menu: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
     ads: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Ad' }],
     coupons: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Coupon' }],
 }, { timestamps: true });
+LocationSchema.index({ geolocation: '2dsphere' }); // Geospatial index
 
 const Location = mongoose.model('Location', LocationSchema);
 
@@ -32,6 +39,7 @@ const MenuItemSchema = new mongoose.Schema({
     description: { type: String },
     price: { type: Number, required: true },
     image: { type: String },
+    isAvailable: { type: Boolean, default: true }, // Tracks availability
 }, { timestamps: true });
 
 const MenuItem = mongoose.model('MenuItem', MenuItemSchema);
@@ -40,7 +48,8 @@ const MenuItem = mongoose.model('MenuItem', MenuItemSchema);
 const CouponSchema = new mongoose.Schema({
     locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
     type: { type: String, enum: ['Discount', 'FreeItem', 'BOGO', 'Cashback'], required: true },
-    number: { type: Number, required: true },
+    code: { type: String, unique: true, required: true }, // Unique coupon code
+    discountValue: { type: Number, required: true }, // Discount value or percentage
     generationDate: { type: Date, default: Date.now },
     expirationDate: { type: Date, required: true },
     isActive: { type: Boolean, default: true },
@@ -53,7 +62,8 @@ const AdSchema = new mongoose.Schema({
     locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
     type: { type: String, enum: ['Video', 'Image'], required: true },
     content: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now },
+    startDate: { type: Date, default: Date.now },
+    endDate: { type: Date }, // Optional scheduling
 }, { timestamps: true });
 
 const Ad = mongoose.model('Ad', AdSchema);
@@ -64,7 +74,7 @@ const NotificationSchema = new mongoose.Schema({
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     type: { type: String, enum: ['Push', 'Email', 'SMS'], required: true },
     message: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now },
+    status: { type: String, enum: ['Sent', 'Failed', 'Pending'], default: 'Pending' },
 }, { timestamps: true });
 
 const Notification = mongoose.model('Notification', NotificationSchema);

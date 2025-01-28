@@ -1,14 +1,14 @@
-const { ObjectId } = require('mongodb');
+const { User, Location, MenuItem, Coupon, Ad, Notification } = require('./models');
 
 // Add a new location
 const addLocation = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const location = await db.collection('locations').insertOne({
+        const location = new Location({
             ...req.body,
-            restaurantId: new ObjectId(req.user.id),
+            restaurantId: req.user.id,
         });
-        res.status(201).json(location.ops[0]);
+        const savedLocation = await location.save();
+        res.status(201).json(savedLocation);
     } catch (err) {
         next(err);
     }
@@ -17,12 +17,13 @@ const addLocation = async (req, res, next) => {
 // Update location
 const updateLocation = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const location = await db
-            .collection('locations')
-            .findOneAndUpdate({ _id: new ObjectId(req.params.id) }, { $set: req.body }, { returnDocument: 'after' });
-        if (!location.value) return res.status(404).json({ error: 'Location not found' });
-        res.status(200).json(location.value);
+        const location = await Location.findByIdAndUpdate(
+            req.params.id,
+            { $set: req.body },
+            { new: true }
+        );
+        if (!location) return res.status(404).json({ error: 'Location not found' });
+        res.status(200).json(location);
     } catch (err) {
         next(err);
     }
@@ -31,9 +32,8 @@ const updateLocation = async (req, res, next) => {
 // Delete location
 const deleteLocation = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const location = await db.collection('locations').deleteOne({ _id: new ObjectId(req.params.id) });
-        if (!location.deletedCount) return res.status(404).json({ error: 'Location not found' });
+        const location = await Location.findByIdAndDelete(req.params.id);
+        if (!location) return res.status(404).json({ error: 'Location not found' });
         res.status(200).json({ message: 'Location deleted successfully' });
     } catch (err) {
         next(err);
@@ -43,12 +43,12 @@ const deleteLocation = async (req, res, next) => {
 // Add menu item
 const addMenuItem = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const menuItem = await db.collection('menuItems').insertOne({
+        const menuItem = new MenuItem({
             ...req.body,
-            locationId: new ObjectId(req.body.locationId),
+            locationId: req.body.locationId,
         });
-        res.status(201).json(menuItem.ops[0]);
+        const savedMenuItem = await menuItem.save();
+        res.status(201).json(savedMenuItem);
     } catch (err) {
         next(err);
     }
@@ -57,16 +57,13 @@ const addMenuItem = async (req, res, next) => {
 // Update menu item
 const updateMenuItem = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const menuItem = await db
-            .collection('menuItems')
-            .findOneAndUpdate(
-                { _id: new ObjectId(req.params.id) },
-                { $set: req.body },
-                { returnDocument: 'after' }
-            );
-        if (!menuItem.value) return res.status(404).json({ error: 'MenuItem not found' });
-        res.status(200).json(menuItem.value);
+        const menuItem = await MenuItem.findByIdAndUpdate(
+            req.params.id,
+            { $set: req.body },
+            { new: true }
+        );
+        if (!menuItem) return res.status(404).json({ error: 'MenuItem not found' });
+        res.status(200).json(menuItem);
     } catch (err) {
         next(err);
     }
@@ -75,9 +72,8 @@ const updateMenuItem = async (req, res, next) => {
 // Delete menu item
 const deleteMenuItem = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const menuItem = await db.collection('menuItems').deleteOne({ _id: new ObjectId(req.params.id) });
-        if (!menuItem.deletedCount) return res.status(404).json({ error: 'MenuItem not found' });
+        const menuItem = await MenuItem.findByIdAndDelete(req.params.id);
+        if (!menuItem) return res.status(404).json({ error: 'MenuItem not found' });
         res.status(200).json({ message: 'MenuItem deleted successfully' });
     } catch (err) {
         next(err);
@@ -87,46 +83,27 @@ const deleteMenuItem = async (req, res, next) => {
 // Generate coupon
 const generateCoupon = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const coupon = await db.collection('coupons').insertOne({
+        const coupon = new Coupon({
             ...req.body,
-            locationId: new ObjectId(req.body.locationId),
+            locationId: req.body.locationId,
         });
-        res.status(201).json(coupon.ops[0]);
+        const savedCoupon = await coupon.save();
+        res.status(201).json(savedCoupon);
     } catch (err) {
         next(err);
     }
 };
-
-// Get all coupons for a specific location
-const getCouponsByLocationId = async (req, res, next) => {
-    try {
-        const db = req.app.locals.db;
-        const locationId = req.params.locationId;
-
-        // Find all coupons for the given location ID
-        const coupons = await db.collection('coupons').find({ locationId: new ObjectId(locationId) }).toArray();
-
-        res.status(200).json(coupons);
-    } catch (err) {
-        next(err);
-    }
-};
-
 
 // Activate coupon
 const activateCoupon = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const coupon = await db
-            .collection('coupons')
-            .findOneAndUpdate(
-                { _id: new ObjectId(req.params.id) },
-                { $set: { isActive: true } },
-                { returnDocument: 'after' }
-            );
-        if (!coupon.value) return res.status(404).json({ error: 'Coupon not found' });
-        res.status(200).json(coupon.value);
+        const coupon = await Coupon.findByIdAndUpdate(
+            req.params.id,
+            { $set: { isActive: true } },
+            { new: true }
+        );
+        if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
+        res.status(200).json(coupon);
     } catch (err) {
         next(err);
     }
@@ -135,16 +112,39 @@ const activateCoupon = async (req, res, next) => {
 // Deactivate coupon
 const deactivateCoupon = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const coupon = await db
-            .collection('coupons')
-            .findOneAndUpdate(
-                { _id: new ObjectId(req.params.id) },
-                { $set: { isActive: false } },
-                { returnDocument: 'after' }
-            );
-        if (!coupon.value) return res.status(404).json({ error: 'Coupon not found' });
-        res.status(200).json(coupon.value);
+        const coupon = await Coupon.findByIdAndUpdate(
+            req.params.id,
+            { $set: { isActive: false } },
+            { new: true }
+        );
+        if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
+        res.status(200).json(coupon);
+    } catch (err) {
+        next(err);
+    }
+};
+
+// Delete coupon
+const deleteCoupon = async (req, res, next) => {
+    try {
+        const coupon = await Coupon.findByIdAndDelete(req.params.id);
+        if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
+        res.status(200).json({ message: 'Coupon deleted successfully' });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// Update coupon
+const updateCoupon = async (req, res, next) => {
+    try {
+        const coupon = await Coupon.findByIdAndUpdate(
+            req.params.id,
+            { $set: req.body },
+            { new: true }
+        );
+        if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
+        res.status(200).json(coupon);
     } catch (err) {
         next(err);
     }
@@ -153,12 +153,12 @@ const deactivateCoupon = async (req, res, next) => {
 // Add ad
 const addAd = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const ad = await db.collection('ads').insertOne({
+        const ad = new Ad({
             ...req.body,
-            locationId: new ObjectId(req.body.locationId),
+            locationId: req.body.locationId,
         });
-        res.status(201).json(ad.ops[0]);
+        const savedAd = await ad.save();
+        res.status(201).json(savedAd);
     } catch (err) {
         next(err);
     }
@@ -167,16 +167,13 @@ const addAd = async (req, res, next) => {
 // Update ad
 const updateAd = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const ad = await db
-            .collection('ads')
-            .findOneAndUpdate(
-                { _id: new ObjectId(req.params.id) },
-                { $set: req.body },
-                { returnDocument: 'after' }
-            );
-        if (!ad.value) return res.status(404).json({ error: 'Ad not found' });
-        res.status(200).json(ad.value);
+        const ad = await Ad.findByIdAndUpdate(
+            req.params.id,
+            { $set: req.body },
+            { new: true }
+        );
+        if (!ad) return res.status(404).json({ error: 'Ad not found' });
+        res.status(200).json(ad);
     } catch (err) {
         next(err);
     }
@@ -185,9 +182,8 @@ const updateAd = async (req, res, next) => {
 // Delete ad
 const deleteAd = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const ad = await db.collection('ads').deleteOne({ _id: new ObjectId(req.params.id) });
-        if (!ad.deletedCount) return res.status(404).json({ error: 'Ad not found' });
+        const ad = await Ad.findByIdAndDelete(req.params.id);
+        if (!ad) return res.status(404).json({ error: 'Ad not found' });
         res.status(200).json({ message: 'Ad deleted successfully' });
     } catch (err) {
         next(err);
@@ -197,15 +193,13 @@ const deleteAd = async (req, res, next) => {
 // Send notifications
 const sendNotifications = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
         const notifications = req.body.customers.map((customerId) =>
-            db.collection('notifications').insertOne({
-                restaurantId: new ObjectId(req.user.id),
-                customerId: new ObjectId(customerId),
+            new Notification({
+                restaurantId: req.user.id,
+                customerId,
                 type: req.body.type,
                 message: req.body.message,
-                createdAt: new Date(),
-            })
+            }).save()
         );
         await Promise.all(notifications);
         res.status(200).json({ message: 'Notifications sent successfully' });
@@ -217,16 +211,13 @@ const sendNotifications = async (req, res, next) => {
 // Update restaurant details
 const updateRestaurantDetails = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const restaurant = await db
-            .collection('users')
-            .findOneAndUpdate(
-                { _id: new ObjectId(req.user.id) },
-                { $set: req.body },
-                { returnDocument: 'after' }
-            );
-        if (!restaurant.value) return res.status(404).json({ error: 'Restaurant not found' });
-        res.status(200).json(restaurant.value);
+        const restaurant = await User.findByIdAndUpdate(
+            req.user.id,
+            { $set: req.body },
+            { new: true }
+        );
+        if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+        res.status(200).json(restaurant);
     } catch (err) {
         next(err);
     }
@@ -235,12 +226,12 @@ const updateRestaurantDetails = async (req, res, next) => {
 // Store customer info
 const storeCustomerInfo = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const customer = await db.collection('users').insertOne({
+        const customer = new User({
             ...req.body,
             role: 'Customer',
         });
-        res.status(201).json(customer.ops[0]);
+        const savedCustomer = await customer.save();
+        res.status(201).json(savedCustomer);
     } catch (err) {
         next(err);
     }
@@ -249,139 +240,89 @@ const storeCustomerInfo = async (req, res, next) => {
 // Update customer info
 const updateCustomerInfo = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const customer = await db
-            .collection('users')
-            .findOneAndUpdate(
-                { _id: new ObjectId(req.params.id), role: 'Customer' },
-                { $set: req.body },
-                { returnDocument: 'after' }
-            );
-        if (!customer.value) return res.status(404).json({ error: 'Customer not found' });
-        res.status(200).json(customer.value);
+        const customer = await User.findOneAndUpdate(
+            { _id: req.params.id, role: 'Customer' },
+            { $set: req.body },
+            { new: true }
+        );
+        if (!customer) return res.status(404).json({ error: 'Customer not found' });
+        res.status(200).json(customer);
     } catch (err) {
         next(err);
     }
 };
 
-// Delete coupon
-const deleteCoupon = async (req, res, next) => {
-    try {
-        const db = req.app.locals.db;
-        // Delete the coupon based on the provided ID
-        const result = await db.collection('coupons').deleteOne({ _id: new ObjectId(req.params.id) });
-
-        // Check if a coupon was actually deleted
-        if (result.deletedCount === 0) {
-            return res.status(404).json({ error: 'Coupon not found' });
-        }
-
-        // If successful, return a success message
-        res.status(200).json({ message: 'Coupon deleted successfully' });
-    } catch (err) {
-        next(err); // Pass error to error-handling middleware
-    }
-};
-
-// Update Coupon
-const updateCoupon = async (req, res, next) => {
-    try {
-        const db = req.app.locals.db;
-
-        // Update the coupon based on the provided ID
-        const result = await db
-            .collection('coupons')
-            .findOneAndUpdate(
-                { _id: new ObjectId(req.params.id) }, // Match the coupon by ID
-                { $set: req.body },                  // Update with data from request body
-                { returnDocument: 'after' }          // Return the updated document
-            );
-
-        // Check if a coupon was actually found and updated
-        if (!result.value) {
-            return res.status(404).json({ error: 'Coupon not found' });
-        }
-
-        // If successful, return the updated coupon
-        res.status(200).json(result.value);
-    } catch (err) {
-        next(err); // Pass error to error-handling middleware
-    }
-};
-
-
-
 // Delete customer info
 const deleteCustomerInfo = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
-        const customer = await db
-            .collection('users')
-            .deleteOne({ _id: new ObjectId(req.params.id), role: 'Customer' });
-        if (!customer.deletedCount) return res.status(404).json({ error: 'Customer not found' });
+        const customer = await User.findOneAndDelete({
+            _id: req.params.id,
+            role: 'Customer',
+        });
+        if (!customer) return res.status(404).json({ error: 'Customer not found' });
         res.status(200).json({ message: 'Customer deleted successfully' });
     } catch (err) {
         next(err);
     }
 };
 
+// Get all coupons for a specific location
+const getCouponsByLocationId = async (req, res, next) => {
+    try {
+        const coupons = await Coupon.find({ locationId: req.params.locationId, isActive: true });
+        res.status(200).json(coupons);
+    } catch (err) {
+        next(err);
+    }
+};
+
+// Get locations with coupons and filtering
 const getLocationsWithCoupons = async (req, res, next) => {
     try {
-        const db = req.app.locals.db;
         const { latitude, longitude, range = 5, expiringSoon, couponType } = req.query;
 
         if (!latitude || !longitude) {
             return res.status(400).json({ error: 'Latitude and longitude are required.' });
         }
 
-        // Convert range from kilometers to meters
-        const rangeInMeters = parseFloat(range) * 1000;
-
-        // Find locations within the specified range
-        const locations = await db.collection('locations').find({
+        const locations = await Location.find({
             geolocation: {
                 $near: {
                     $geometry: {
-                        type: "Point",
-                        coordinates: [parseFloat(longitude), parseFloat(latitude)]
+                        type: 'Point',
+                        coordinates: [parseFloat(longitude), parseFloat(latitude)],
                     },
-                    $maxDistance: rangeInMeters
-                }
-            }
-        }).toArray();
+                    $maxDistance: parseFloat(range) * 1000,
+                },
+            },
+        });
 
-        // Retrieve active coupons for each location
-        const locationIds = locations.map(loc => loc._id);
+        const locationIds = locations.map((loc) => loc._id);
         const couponFilter = {
             locationId: { $in: locationIds },
-            isActive: true
+            isActive: true,
         };
 
         if (expiringSoon) {
-            couponFilter.expiryDate = { $lt: new Date(new Date().getTime() + 24 * 60 * 60 * 1000) }; // Expiring within 24 hours
+            couponFilter.expirationDate = { $lt: new Date(Date.now() + 24 * 60 * 60 * 1000) };
         }
 
         if (couponType) {
             couponFilter.type = couponType;
         }
 
-        const coupons = await db.collection('coupons').find(couponFilter).toArray();
+        const coupons = await Coupon.find(couponFilter);
 
-        // Group coupons by location
-        const result = locations.map(location => {
-            const locationCoupons = coupons.filter(coupon => coupon.locationId.equals(location._id));
-            return {
-                ...location,
-                coupons: locationCoupons
-            };
-        });
+        const result = locations.map((location) => ({
+            ...location.toObject(),
+            coupons: coupons.filter((coupon) => coupon.locationId.equals(location._id)),
+        }));
 
         res.status(200).json(result);
     } catch (err) {
         next(err);
     }
 };
-
 
 module.exports = {
     addLocation,
@@ -393,6 +334,8 @@ module.exports = {
     generateCoupon,
     activateCoupon,
     deactivateCoupon,
+    deleteCoupon,
+    updateCoupon,
     addAd,
     updateAd,
     deleteAd,
@@ -401,8 +344,6 @@ module.exports = {
     storeCustomerInfo,
     updateCustomerInfo,
     deleteCustomerInfo,
-    deleteCoupon,
-    updateCoupon,
     getCouponsByLocationId,
-    getLocationsWithCoupons
+    getLocationsWithCoupons,
 };
