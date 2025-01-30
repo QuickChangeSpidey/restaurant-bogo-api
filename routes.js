@@ -1,38 +1,43 @@
 const express = require('express');
 const { checkAuth, checkRole } = require('./auth');
 const {
-    addLocation,
-    updateLocation,
-    deleteLocation,
-    addMenuItem,
-    updateMenuItem,
-    deleteMenuItem,
-    generateCoupon,
-    updateCoupon,
-    deleteCoupon,
-    activateCoupon,
-    deactivateCoupon,
-    addAd,
-    updateAd,
-    deleteAd,
-    sendNotifications,
-    updateRestaurantDetails,
-    storeCustomerInfo,
-    updateCustomerInfo,
-    deleteCustomerInfo,
-    getCouponsByLocationId,
-    getLocationsWithCoupons,
-    addLocationToFavorites,
-    removeLocationFromFavorites,
-    getFavoriteLocations,
-    redeemCoupon
+  addLocation,
+  updateLocation,
+  deleteLocation,
+  addMenuItem,
+  updateMenuItem,
+  deleteMenuItem,
+  generateCoupon,
+  updateCoupon,
+  deleteCoupon,
+  activateCoupon,
+  deactivateCoupon,
+  addAd,
+  updateAd,
+  deleteAd,
+  sendNotifications,
+  updateRestaurantDetails,
+  storeCustomerInfo,
+  updateCustomerInfo,
+  deleteCustomerInfo,
+  getCouponsByLocationId,
+  getLocationsWithCoupons,
+  addLocationToFavorites,
+  removeLocationFromFavorites,
+  getFavoriteLocations,
+  redeemCoupon
 } = require('./restaurantController');
 
 const {
-    getRedemptionsByDate,
-    getCouponUsageSummary,
-    getRedemptionsByUser,
-  } = require('./analyticsController.js');
+  getRedemptionsByDate,       // Aggregates coupon redemptions over a specified date range
+  getCouponUsageSummary,      // Summarizes total redemptions (e.g., grouped by coupon)
+  getRedemptionsByUser,       // Retrieves coupon redemptions for a specific user
+  getTopCustomers,            // Finds which customers redeem the most coupons
+  getTopRedeemedCoupons,      // Lists coupons in descending order of total redemptions
+  getCouponUsageByLocation,   // Shows how many coupon redemptions occurred per location
+  getDailyRedemptions,        // Returns a daily breakdown of redemptions (useful for charts)
+  getRedemptionsByCouponType, // Shows redemption counts grouped by coupon type (BOGO, FlatDiscount, etc.)
+} = require('./analyticsController.js');
 
 const router = express.Router();
 
@@ -70,8 +75,81 @@ router.post('/favorites/locations/:locationId', checkAuth, checkRole('Customer')
 router.delete('/favorites/locations/:locationId', checkAuth, checkRole('Customer'), removeLocationFromFavorites);
 router.get('/favorites/locations', checkAuth, checkRole('Customer'), getFavoriteLocations);
 
-router.get('/analytics/redemptions/date-range', checkAuth, checkRole('Restaurant'), getRedemptionsByDate);
-router.get('/analytics/redemptions/summary', checkAuth, checkRole('Restaurant'), getCouponUsageSummary);
-router.get('/analytics/redemptions/user/:userId', checkAuth, checkRole('Restaurant'), getRedemptionsByUser);
+/**
+ * ANALYTICS ROUTES
+ */
+
+// 1) Get redemptions by date range
+// Example usage: GET /analytics/redemptions/date-range?start=2025-01-01&end=2025-01-31
+router.get(
+  '/analytics/redemptions/date-range',
+  checkAuth,
+  checkRole('Restaurant'), // or 'Admin' if needed
+  getRedemptionsByDate
+);
+
+// 2) Get overall coupon usage summary (e.g., total redemptions by coupon, etc.)
+router.get(
+  '/analytics/redemptions/summary',
+  checkAuth,
+  checkRole('Restaurant'), // or 'Admin'
+  getCouponUsageSummary
+);
+
+// 3) Get redemptions by user
+// Example usage: GET /analytics/redemptions/user/<USER_ID>
+router.get(
+  '/analytics/redemptions/user/:userId',
+  checkAuth,
+  checkRole('Restaurant'), // or 'Admin'
+  getRedemptionsByUser
+);
+
+// 4) Get top customers (those who redeem the most coupons)
+// Example usage: GET /analytics/customers/top
+router.get(
+  '/analytics/customers/top',
+  checkAuth,
+  checkRole('Restaurant'), // or 'Admin'
+  getTopCustomers
+);
+
+// 5) Get top redeemed coupons (by total redemption count)
+// Example usage: GET /analytics/coupons/top-redeemed
+router.get(
+  '/analytics/coupons/top-redeemed',
+  checkAuth,
+  checkRole('Restaurant'), // or 'Admin'
+  getTopRedeemedCoupons
+);
+
+// 6) Get coupon usage by location
+// Example usage: GET /analytics/locations/usage?locationId=<LOCATION_ID>
+// If no locationId is provided, returns usage for all locations
+router.get(
+  '/analytics/locations/usage',
+  checkAuth,
+  checkRole('Restaurant'), // or 'Admin'
+  getCouponUsageByLocation
+);
+
+// 7) Get daily redemptions (time-based breakdown)
+// Example usage: GET /analytics/redemptions/daily?start=2025-01-01&end=2025-01-31
+router.get(
+  '/analytics/redemptions/daily',
+  checkAuth,
+  checkRole('Restaurant'), // or 'Admin'
+  getDailyRedemptions
+);
+
+// 8) Get redemptions by coupon type (e.g., BOGO, FlatDiscount, FamilyPack, etc.)
+// Example usage: GET /analytics/coupons/types
+router.get(
+  '/analytics/coupons/types',
+  checkAuth,
+  checkRole('Restaurant'), // or 'Admin'
+  getRedemptionsByCouponType
+);
+
 
 module.exports = router;

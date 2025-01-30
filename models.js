@@ -81,7 +81,6 @@ const CouponSchema = new mongoose.Schema({
 
 const Coupon = mongoose.model('Coupon', CouponSchema);
 
-
 // Coupon Redmption Table
 const CouponRedemptionSchema = new mongoose.Schema({
     couponId: { type: mongoose.Schema.Types.ObjectId, ref: 'Coupon', required: true },
@@ -92,8 +91,6 @@ const CouponRedemptionSchema = new mongoose.Schema({
 
 // If needed, you can store a restaurantId as well, or derive it from location
 const CouponRedemption = mongoose.model('CouponRedemption', CouponRedemptionSchema);
-
-
 
 // Ad Schema
 const AdSchema = new mongoose.Schema({
