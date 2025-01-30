@@ -1,4 +1,4 @@
-const { User, Location, MenuItem, Coupon, Ad, Notification } = require('./models');
+const { User, Location, MenuItem, Coupon, Ad, Notification, CouponRedemption } = require('./models');
 
 // Add a new location
 const addLocation = async (req, res, next) => {
@@ -494,6 +494,67 @@ const addLocationToFavorites = async (req, res, next) => {
     }
   };
 
+// Redeem a coupon (Customer role)
+const redeemCoupon = async (req, res, next) => {
+    try {
+        const { couponId, locationId } = req.body; 
+        // Or use req.params if that suits your route design
+
+        // 1. Verify location
+        const location = await Location.findById(locationId);
+        if (!location) {
+            return res.status(404).json({ error: 'Location not found' });
+        }
+
+        // 2. Atomically decrement the coupon quantity
+        //    We also check that the coupon is active, not expired, and has quantity > 0
+        const coupon = await Coupon.findOneAndUpdate(
+            {
+                _id: couponId,
+                isActive: true,
+                expirationDate: { $gte: new Date() }, // not expired
+                quantity: { $gt: 0 }, // must be > 0
+            },
+            { $inc: { quantity: -1 } }, // decrement quantity
+            { new: true }               // return the updated document
+        );
+
+        // If null, coupon was not found or had no remaining quantity
+        if (!coupon) {
+            return res.status(400).json({ error: 'Coupon not available or no quantity left' });
+        }
+
+        // 3. (Optional) Check if this user has already redeemed this coupon
+        //    if you have per-user usage limit logic:
+        const redemptionCount = await CouponRedemption.countDocuments({
+            couponId: coupon._id,
+            userId: req.user.id,
+        });
+        if (redemptionCount >= (coupon.maxUsagePerUser || 1)) {
+            // Revert the decrement if needed
+            await Coupon.findByIdAndUpdate(coupon._id, { $inc: { quantity: 1 } });
+            return res.status(400).json({ error: 'You have already redeemed this coupon' });
+        }
+
+        // 4. Log redemption
+        const redemption = new CouponRedemption({
+            couponId: coupon._id,
+            userId: req.user.id,
+            locationId: location._id,
+            redeemedAt: new Date(),
+        });
+        await redemption.save();
+
+        // 5. Respond to client
+        res.status(200).json({
+            message: 'Coupon redeemed successfully',
+            coupon,
+            redemption,
+        });
+    } catch (err) {
+        next(err);
+    }
+};
   const getFavoriteLocations = async (req, res, next) => {
     try {
       const customer = await User.findById(req.user.id)
@@ -542,4 +603,5 @@ module.exports = {
     addLocationToFavorites,
     removeLocationFromFavorites,
     getFavoriteLocations,
+    redeemCoupon
 };

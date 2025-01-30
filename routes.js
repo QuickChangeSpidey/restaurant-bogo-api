@@ -25,6 +25,7 @@ const {
     addLocationToFavorites,
     removeLocationFromFavorites,
     getFavoriteLocations,
+    redeemCoupon
 } = require('./restaurantController');
 
 const router = express.Router();
@@ -45,6 +46,7 @@ router.delete('/coupons/:id', checkAuth, checkRole('Restaurant'), deleteCoupon);
 router.patch('/coupons/:id/activate', checkAuth, checkRole('Restaurant'), activateCoupon);
 router.patch('/coupons/:id/deactivate', checkAuth, checkRole('Restaurant'), deactivateCoupon);
 router.get('/coupons/:locationId', getCouponsByLocationId);
+router.post('/coupons/redeem', checkAuth, checkRole('Customer'), redeemCoupon);
 
 router.post('/ads', checkAuth, checkRole('Restaurant'), addAd);
 router.put('/ads/:id', checkAuth, checkRole('Restaurant'), updateAd);

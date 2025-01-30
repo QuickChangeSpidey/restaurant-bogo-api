@@ -9,7 +9,7 @@ const UserSchema = new mongoose.Schema({
     isActive: { type: Boolean, default: true },
     details: { type: mongoose.Schema.Types.Mixed },
     favoritesLocations: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Location' }],
-  }, { timestamps: true });
+}, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
 
@@ -75,9 +75,25 @@ const CouponSchema = new mongoose.Schema({
     generationDate: { type: Date, default: Date.now },
     expirationDate: { type: Date, required: true },
     isActive: { type: Boolean, default: true },
+    quantity: { type: Number, default: 0 },
+    maxUsagePerUser: { type: Number, default: 1 }
 }, { timestamps: true });
 
 const Coupon = mongoose.model('Coupon', CouponSchema);
+
+
+// Coupon Redmption Table
+const CouponRedemptionSchema = new mongoose.Schema({
+    couponId: { type: mongoose.Schema.Types.ObjectId, ref: 'Coupon', required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
+    redeemedAt: { type: Date, default: Date.now },
+});
+
+// If needed, you can store a restaurantId as well, or derive it from location
+const CouponRedemption = mongoose.model('CouponRedemption', CouponRedemptionSchema);
+
+
 
 // Ad Schema
 const AdSchema = new mongoose.Schema({
@@ -109,4 +125,5 @@ module.exports = {
     Coupon,
     Ad,
     Notification,
+    CouponRedemption
 };
