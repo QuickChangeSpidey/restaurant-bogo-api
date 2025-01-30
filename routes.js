@@ -28,6 +28,12 @@ const {
     redeemCoupon
 } = require('./restaurantController');
 
+const {
+    getRedemptionsByDate,
+    getCouponUsageSummary,
+    getRedemptionsByUser,
+  } = require('./analyticsController.js');
+
 const router = express.Router();
 
 // Restaurant Routes
@@ -64,5 +70,8 @@ router.post('/favorites/locations/:locationId', checkAuth, checkRole('Customer')
 router.delete('/favorites/locations/:locationId', checkAuth, checkRole('Customer'), removeLocationFromFavorites);
 router.get('/favorites/locations', checkAuth, checkRole('Customer'), getFavoriteLocations);
 
+router.get('/analytics/redemptions/date-range', checkAuth, checkRole('Restaurant'), getRedemptionsByDate);
+router.get('/analytics/redemptions/summary', checkAuth, checkRole('Restaurant'), getCouponUsageSummary);
+router.get('/analytics/redemptions/user/:userId', checkAuth, checkRole('Restaurant'), getRedemptionsByUser);
 
 module.exports = router;

@@ -575,8 +575,6 @@ const redeemCoupon = async (req, res, next) => {
       next(err);
     }
   };
-  
-  
 
 module.exports = {
     addLocation,
