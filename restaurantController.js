@@ -426,6 +426,97 @@ const getLocationsWithCoupons = async (req, res, next) => {
     }
 };
 
+const addLocationToFavorites = async (req, res, next) => {
+    try {
+      // The ID of the currently logged-in user (Customer)
+      const customer = await User.findById(req.user.id);
+  
+      if (!customer) {
+        return res.status(404).json({ error: 'Customer not found' });
+      }
+  
+      // Optionally double-check the user's role
+      if (customer.role !== 'Customer') {
+        return res.status(403).json({ error: 'Only customers can add favorite locations' });
+      }
+  
+      // Check if the Location exists
+      const { locationId } = req.params;
+      const location = await Location.findById(locationId);
+      if (!location) {
+        return res.status(404).json({ error: 'Location not found' });
+      }
+  
+      // If it's already in favorites, handle accordingly
+      if (customer.favoritesLocations.includes(locationId)) {
+        return res.status(400).json({ error: 'Location is already in your favorites' });
+      }
+  
+      // Add the location to the favorites array
+      customer.favoritesLocations.push(locationId);
+      await customer.save();
+  
+      res.status(200).json({
+        message: 'Location added to favorites successfully',
+        favorites: customer.favoritesLocations,
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  const removeLocationFromFavorites = async (req, res, next) => {
+    try {
+      const customer = await User.findById(req.user.id);
+      if (!customer) {
+        return res.status(404).json({ error: 'Customer not found' });
+      }
+  
+      if (customer.role !== 'Customer') {
+        return res.status(403).json({ error: 'Only customers can remove favorite locations' });
+      }
+  
+      const { locationId } = req.params;
+  
+      // Filter out the locationId from the array
+      customer.favoritesLocations = customer.favoritesLocations.filter(
+        (favLocationId) => favLocationId.toString() !== locationId
+      );
+  
+      await customer.save();
+  
+      res.status(200).json({
+        message: 'Location removed from favorites successfully',
+        favorites: customer.favoritesLocations,
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  const getFavoriteLocations = async (req, res, next) => {
+    try {
+      const customer = await User.findById(req.user.id)
+        .populate('favoritesLocations') // populates location documents
+        .exec();
+  
+      if (!customer) {
+        return res.status(404).json({ error: 'Customer not found' });
+      }
+  
+      if (customer.role !== 'Customer') {
+        return res.status(403).json({ error: 'Only customers can view favorite locations' });
+      }
+  
+      // The populated location documents will be in `customer.favoritesLocations`
+      res.status(200).json(customer.favoritesLocations);
+    } catch (err) {
+      next(err);
+    }
+  };
+  
+  
+
 module.exports = {
     addLocation,
     updateLocation,
@@ -448,4 +539,7 @@ module.exports = {
     deleteCustomerInfo,
     getCouponsByLocationId,
     getLocationsWithCoupons,
+    addLocationToFavorites,
+    removeLocationFromFavorites,
+    getFavoriteLocations,
 };

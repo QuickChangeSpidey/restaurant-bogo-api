@@ -4,11 +4,12 @@ const mongoose = require('mongoose');
 const UserSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true }, // For authentication
+    password: { type: String, required: true },
     role: { type: String, enum: ['Admin', 'Restaurant', 'Customer'], required: true },
-    isActive: { type: Boolean, default: true }, // Track active status
+    isActive: { type: Boolean, default: true },
     details: { type: mongoose.Schema.Types.Mixed },
-}, { timestamps: true });
+    favoritesLocations: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Location' }],
+  }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
 

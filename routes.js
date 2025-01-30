@@ -21,7 +21,10 @@ const {
     updateCustomerInfo,
     deleteCustomerInfo,
     getCouponsByLocationId,
-    getLocationsWithCoupons
+    getLocationsWithCoupons,
+    addLocationToFavorites,
+    removeLocationFromFavorites,
+    getFavoriteLocations,
 } = require('./restaurantController');
 
 const router = express.Router();
@@ -54,5 +57,10 @@ router.put('/account', checkAuth, checkRole('Restaurant'), updateRestaurantDetai
 router.post('/customers', checkAuth, checkRole('Restaurant'), storeCustomerInfo);
 router.put('/customers/:id', checkAuth, checkRole('Restaurant'), updateCustomerInfo);
 router.delete('/customers/:id', checkAuth, checkRole('Restaurant'), deleteCustomerInfo);
+
+router.post('/favorites/locations/:locationId', checkAuth, checkRole('Customer'), addLocationToFavorites);
+router.delete('/favorites/locations/:locationId', checkAuth, checkRole('Customer'), removeLocationFromFavorites);
+router.get('/favorites/locations', checkAuth, checkRole('Customer'), getFavoriteLocations);
+
 
 module.exports = router;
