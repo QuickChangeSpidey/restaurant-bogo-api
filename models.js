@@ -142,6 +142,7 @@ const Ad = mongoose.model('Ad', AdSchema);
  */
 const NotificationSchema = new mongoose.Schema({
     restaurantId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     type: { type: String, enum: ['Push', 'Email', 'SMS'], required: true },
     message: { type: String, required: true },
@@ -149,6 +150,7 @@ const NotificationSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const Notification = mongoose.model('Notification', NotificationSchema);
+
 
 /**
  * EXPORT ALL MODELS
