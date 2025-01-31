@@ -3,6 +3,9 @@ const { User, Location, MenuItem, Coupon, Ad, Notification, CouponRedemption } =
 // Add a new location
 const addLocation = async (req, res, next) => {
     try {
+        // Creates a new location referencing the local user ID (Restaurant)
+        // RECOMMENDATION: You might also check if req.user.role === 'Restaurant' in the route or here
+        // plus confirm that user truly doesn't exceed location limits, etc.
         const location = new Location({
             ...req.body,
             restaurantId: req.user.id,
@@ -17,6 +20,8 @@ const addLocation = async (req, res, next) => {
 // Update location
 const updateLocation = async (req, res, next) => {
     try {
+        // RECOMMENDATION: Confirm that the location belongs to req.user.id (if multi-tenant)
+        // e.g., await Location.findOneAndUpdate({_id: req.params.id, restaurantId: req.user.id} ...)
         const location = await Location.findByIdAndUpdate(
             req.params.id,
             { $set: req.body },
@@ -32,6 +37,7 @@ const updateLocation = async (req, res, next) => {
 // Delete location
 const deleteLocation = async (req, res, next) => {
     try {
+        // RECOMMENDATION: Similarly, confirm location belongs to req.user.id, if needed
         const location = await Location.findByIdAndDelete(req.params.id);
         if (!location) return res.status(404).json({ error: 'Location not found' });
         res.status(200).json({ message: 'Location deleted successfully' });
@@ -43,6 +49,7 @@ const deleteLocation = async (req, res, next) => {
 // Add menu item
 const addMenuItem = async (req, res, next) => {
     try {
+        // RECOMMENDATION: Optionally verify the location belongs to the same user
         const menuItem = new MenuItem({
             ...req.body,
             locationId: req.body.locationId,
@@ -57,6 +64,7 @@ const addMenuItem = async (req, res, next) => {
 // Update menu item
 const updateMenuItem = async (req, res, next) => {
     try {
+        // RECOMMENDATION: Also optionally confirm the menu item’s location belongs to this user
         const menuItem = await MenuItem.findByIdAndUpdate(
             req.params.id,
             { $set: req.body },
@@ -85,49 +93,45 @@ const generateCoupon = async (req, res, next) => {
     try {
         const { type, locationId, ...fields } = req.body;
 
+        // Validate the coupon type
         switch (type) {
             case 'BOGO':
                 if (!fields.comboItems || fields.comboItems.length < 1) {
                     return res.status(400).json({ error: 'BOGO deals require at least one item.' });
                 }
                 break;
-
             case 'FreeItem':
                 if (!fields.freeItemId || !fields.minimumSpend) {
                     return res.status(400).json({ error: 'FreeItem deals require a free item and a minimum spend.' });
                 }
                 break;
-
             case 'FlatDiscount':
                 if (!fields.discountValue || !fields.minimumSpend) {
                     return res.status(400).json({ error: 'FlatDiscount requires a discount value and minimum spend.' });
                 }
                 break;
-
             case 'SpendMoreSaveMore':
                 if (!fields.minimumSpend || !fields.discountValue) {
                     return res.status(400).json({ error: 'SpendMoreSaveMore requires spend threshold and discount value.' });
                 }
                 break;
-
             case 'ComboDeal':
             case 'FamilyPack':
                 if (!fields.comboItems || fields.comboItems.length < 2) {
                     return res.status(400).json({ error: `${type} deals require at least two items.` });
                 }
                 break;
-
             case 'LimitedTime':
             case 'HappyHour':
                 if (!fields.startTime || !fields.endTime || !fields.discountValue) {
                     return res.status(400).json({ error: `${type} deals require start and end times and a discount value.` });
                 }
                 break;
-
             default:
                 return res.status(400).json({ error: 'Invalid coupon type.' });
         }
 
+        // RECOMMENDATION: Optionally confirm location belongs to this restaurant user
         const coupon = new Coupon({ type, locationId, ...fields });
         const savedCoupon = await coupon.save();
         res.status(201).json(savedCoupon);
@@ -147,43 +151,38 @@ const updateCoupon = async (req, res, next) => {
                     return res.status(400).json({ error: 'BOGO deals require at least one item.' });
                 }
                 break;
-
             case 'FreeItem':
                 if (!fields.freeItemId || !fields.minimumSpend) {
                     return res.status(400).json({ error: 'FreeItem deals require a free item and a minimum spend.' });
                 }
                 break;
-
             case 'FlatDiscount':
                 if (!fields.discountValue || !fields.minimumSpend) {
                     return res.status(400).json({ error: 'FlatDiscount requires a discount value and minimum spend.' });
                 }
                 break;
-
             case 'SpendMoreSaveMore':
                 if (!fields.minimumSpend || !fields.discountValue) {
                     return res.status(400).json({ error: 'SpendMoreSaveMore requires spend threshold and discount value.' });
                 }
                 break;
-
             case 'ComboDeal':
             case 'FamilyPack':
                 if (!fields.comboItems || fields.comboItems.length < 2) {
                     return res.status(400).json({ error: `${type} deals require at least two items.` });
                 }
                 break;
-
             case 'LimitedTime':
             case 'HappyHour':
                 if (!fields.startTime || !fields.endTime || !fields.discountValue) {
                     return res.status(400).json({ error: `${type} deals require start and end times and a discount value.` });
                 }
                 break;
-
             default:
                 return res.status(400).json({ error: 'Invalid coupon type.' });
         }
 
+        // RECOMMENDATION: Optionally check the coupon belongs to user’s location
         const coupon = await Coupon.findByIdAndUpdate(
             req.params.id,
             { $set: { type, ...fields } },
@@ -191,7 +190,6 @@ const updateCoupon = async (req, res, next) => {
         );
 
         if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
-
         res.status(200).json(coupon);
     } catch (err) {
         next(err);
@@ -202,7 +200,6 @@ const updateCoupon = async (req, res, next) => {
 const activateCoupon = async (req, res, next) => {
     try {
         const coupon = await Coupon.findById(req.params.id);
-
         if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
 
         if (coupon.isActive) {
@@ -222,7 +219,6 @@ const activateCoupon = async (req, res, next) => {
 const deactivateCoupon = async (req, res, next) => {
     try {
         const coupon = await Coupon.findById(req.params.id);
-
         if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
 
         if (!coupon.isActive) {
@@ -242,7 +238,6 @@ const deactivateCoupon = async (req, res, next) => {
 const deleteCoupon = async (req, res, next) => {
     try {
         const coupon = await Coupon.findByIdAndDelete(req.params.id);
-
         if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
 
         res.status(200).json({ message: 'Coupon deleted successfully.' });
@@ -251,7 +246,6 @@ const deleteCoupon = async (req, res, next) => {
     }
 };
 
-
 // Add ad
 const addAd = async (req, res, next) => {
     try {
@@ -259,6 +253,7 @@ const addAd = async (req, res, next) => {
             ...req.body,
             locationId: req.body.locationId,
         });
+        // RECOMMENDATION: confirm the user is the location’s restaurant
         const savedAd = await ad.save();
         res.status(201).json(savedAd);
     } catch (err) {
@@ -269,6 +264,7 @@ const addAd = async (req, res, next) => {
 // Update ad
 const updateAd = async (req, res, next) => {
     try {
+        // RECOMMENDATION: confirm the ad belongs to user
         const ad = await Ad.findByIdAndUpdate(
             req.params.id,
             { $set: req.body },
@@ -284,6 +280,7 @@ const updateAd = async (req, res, next) => {
 // Delete ad
 const deleteAd = async (req, res, next) => {
     try {
+        // RECOMMENDATION: confirm the ad belongs to user
         const ad = await Ad.findByIdAndDelete(req.params.id);
         if (!ad) return res.status(404).json({ error: 'Ad not found' });
         res.status(200).json({ message: 'Ad deleted successfully' });
@@ -295,6 +292,8 @@ const deleteAd = async (req, res, next) => {
 // Send notifications
 const sendNotifications = async (req, res, next) => {
     try {
+        // RECOMMENDATION: if you only want to notify customers belonging to your restaurant,
+        // you'd validate that somehow. This code assumes you pass in an array of customer IDs you want to notify.
         const notifications = req.body.customers.map((customerId) =>
             new Notification({
                 restaurantId: req.user.id,
@@ -313,6 +312,8 @@ const sendNotifications = async (req, res, next) => {
 // Update restaurant details
 const updateRestaurantDetails = async (req, res, next) => {
     try {
+        // This updates the local user doc for the restaurant
+        // If you’re purely using Cognito for auth, you might store changes differently or skip password updates
         const restaurant = await User.findByIdAndUpdate(
             req.user.id,
             { $set: req.body },
@@ -328,6 +329,9 @@ const updateRestaurantDetails = async (req, res, next) => {
 // Store customer info
 const storeCustomerInfo = async (req, res, next) => {
     try {
+        // Creates a new local user with role "Customer"
+        // RECOMMENDATION: If you use Cognito for actual sign-up, you might only store "cognitoSub" or "email"
+        //   and skip local passwords. This depends on your design.
         const customer = new User({
             ...req.body,
             role: 'Customer',
@@ -342,6 +346,7 @@ const storeCustomerInfo = async (req, res, next) => {
 // Update customer info
 const updateCustomerInfo = async (req, res, next) => {
     try {
+        // Finds the user by _id and role: 'Customer', then updates
         const customer = await User.findOneAndUpdate(
             { _id: req.params.id, role: 'Customer' },
             { $set: req.body },
@@ -371,6 +376,7 @@ const deleteCustomerInfo = async (req, res, next) => {
 // Get all coupons for a specific location
 const getCouponsByLocationId = async (req, res, next) => {
     try {
+        // Returns only active coupons
         const coupons = await Coupon.find({ locationId: req.params.locationId, isActive: true });
         res.status(200).json(coupons);
     } catch (err) {
@@ -394,7 +400,7 @@ const getLocationsWithCoupons = async (req, res, next) => {
                         type: 'Point',
                         coordinates: [parseFloat(longitude), parseFloat(latitude)],
                     },
-                    $maxDistance: parseFloat(range) * 1000,
+                    $maxDistance: parseFloat(range) * 1000, // Convert km to meters
                 },
             },
         });
@@ -415,6 +421,7 @@ const getLocationsWithCoupons = async (req, res, next) => {
 
         const coupons = await Coupon.find(couponFilter);
 
+        // Attach each location's active coupons
         const result = locations.map((location) => ({
             ...location.toObject(),
             coupons: coupons.filter((coupon) => coupon.locationId.equals(location._id)),
@@ -426,79 +433,70 @@ const getLocationsWithCoupons = async (req, res, next) => {
     }
 };
 
+// Add location to Customer favorites
 const addLocationToFavorites = async (req, res, next) => {
     try {
-      // The ID of the currently logged-in user (Customer)
-      const customer = await User.findById(req.user.id);
-  
-      if (!customer) {
-        return res.status(404).json({ error: 'Customer not found' });
-      }
-  
-      // Optionally double-check the user's role
-      if (customer.role !== 'Customer') {
-        return res.status(403).json({ error: 'Only customers can add favorite locations' });
-      }
-  
-      // Check if the Location exists
-      const { locationId } = req.params;
-      const location = await Location.findById(locationId);
-      if (!location) {
-        return res.status(404).json({ error: 'Location not found' });
-      }
-  
-      // If it's already in favorites, handle accordingly
-      if (customer.favoritesLocations.includes(locationId)) {
-        return res.status(400).json({ error: 'Location is already in your favorites' });
-      }
-  
-      // Add the location to the favorites array
-      customer.favoritesLocations.push(locationId);
-      await customer.save();
-  
-      res.status(200).json({
-        message: 'Location added to favorites successfully',
-        favorites: customer.favoritesLocations,
-      });
-    } catch (err) {
-      next(err);
-    }
-  };
+        // The ID of the currently logged-in user (Customer)
+        const customer = await User.findById(req.user.id);
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+        if (customer.role !== 'Customer') {
+            return res.status(403).json({ error: 'Only customers can add favorite locations' });
+        }
 
-  const removeLocationFromFavorites = async (req, res, next) => {
-    try {
-      const customer = await User.findById(req.user.id);
-      if (!customer) {
-        return res.status(404).json({ error: 'Customer not found' });
-      }
-  
-      if (customer.role !== 'Customer') {
-        return res.status(403).json({ error: 'Only customers can remove favorite locations' });
-      }
-  
-      const { locationId } = req.params;
-  
-      // Filter out the locationId from the array
-      customer.favoritesLocations = customer.favoritesLocations.filter(
-        (favLocationId) => favLocationId.toString() !== locationId
-      );
-  
-      await customer.save();
-  
-      res.status(200).json({
-        message: 'Location removed from favorites successfully',
-        favorites: customer.favoritesLocations,
-      });
+        const { locationId } = req.params;
+        const location = await Location.findById(locationId);
+        if (!location) {
+            return res.status(404).json({ error: 'Location not found' });
+        }
+
+        if (customer.favoritesLocations.includes(locationId)) {
+            return res.status(400).json({ error: 'Location is already in your favorites' });
+        }
+
+        customer.favoritesLocations.push(locationId);
+        await customer.save();
+
+        res.status(200).json({
+            message: 'Location added to favorites successfully',
+            favorites: customer.favoritesLocations,
+        });
     } catch (err) {
-      next(err);
+        next(err);
     }
-  };
+};
+
+// Remove location from Customer favorites
+const removeLocationFromFavorites = async (req, res, next) => {
+    try {
+        const customer = await User.findById(req.user.id);
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+        if (customer.role !== 'Customer') {
+            return res.status(403).json({ error: 'Only customers can remove favorite locations' });
+        }
+
+        const { locationId } = req.params;
+        customer.favoritesLocations = customer.favoritesLocations.filter(
+            (favLocationId) => favLocationId.toString() !== locationId
+        );
+        await customer.save();
+
+        res.status(200).json({
+            message: 'Location removed from favorites successfully',
+            favorites: customer.favoritesLocations,
+        });
+    } catch (err) {
+        next(err);
+    }
+};
 
 // Redeem a coupon (Customer role)
 const redeemCoupon = async (req, res, next) => {
     try {
-        const { couponId, locationId } = req.body; 
-        // Or use req.params if that suits your route design
+        const { couponId, locationId } = req.body;
 
         // 1. Verify location
         const location = await Location.findById(locationId);
@@ -506,37 +504,35 @@ const redeemCoupon = async (req, res, next) => {
             return res.status(404).json({ error: 'Location not found' });
         }
 
-        // 2. Atomically decrement the coupon quantity
-        //    We also check that the coupon is active, not expired, and has quantity > 0
+        // 2. Atomically decrement coupon quantity (if active, not expired, quantity > 0)
         const coupon = await Coupon.findOneAndUpdate(
             {
                 _id: couponId,
                 isActive: true,
-                expirationDate: { $gte: new Date() }, // not expired
-                quantity: { $gt: 0 }, // must be > 0
+                expirationDate: { $gte: new Date() },
+                quantity: { $gt: 0 },
             },
-            { $inc: { quantity: -1 } }, // decrement quantity
-            { new: true }               // return the updated document
+            { $inc: { quantity: -1 } },
+            { new: true }
         );
 
-        // If null, coupon was not found or had no remaining quantity
+        // If null, the coupon is not available or quantity = 0
         if (!coupon) {
             return res.status(400).json({ error: 'Coupon not available or no quantity left' });
         }
 
-        // 3. (Optional) Check if this user has already redeemed this coupon
-        //    if you have per-user usage limit logic:
+        // 3. Check per-user usage limit
         const redemptionCount = await CouponRedemption.countDocuments({
             couponId: coupon._id,
             userId: req.user.id,
         });
         if (redemptionCount >= (coupon.maxUsagePerUser || 1)) {
-            // Revert the decrement if needed
+            // Revert the decrement
             await Coupon.findByIdAndUpdate(coupon._id, { $inc: { quantity: 1 } });
             return res.status(400).json({ error: 'You have already redeemed this coupon' });
         }
 
-        // 4. Log redemption
+        // 4. Log the redemption
         const redemption = new CouponRedemption({
             couponId: coupon._id,
             userId: req.user.id,
@@ -545,7 +541,7 @@ const redeemCoupon = async (req, res, next) => {
         });
         await redemption.save();
 
-        // 5. Respond to client
+        // 5. Respond
         res.status(200).json({
             message: 'Coupon redeemed successfully',
             coupon,
@@ -555,26 +551,26 @@ const redeemCoupon = async (req, res, next) => {
         next(err);
     }
 };
-  const getFavoriteLocations = async (req, res, next) => {
+
+// Get favorite locations for a Customer
+const getFavoriteLocations = async (req, res, next) => {
     try {
-      const customer = await User.findById(req.user.id)
-        .populate('favoritesLocations') // populates location documents
-        .exec();
-  
-      if (!customer) {
-        return res.status(404).json({ error: 'Customer not found' });
-      }
-  
-      if (customer.role !== 'Customer') {
-        return res.status(403).json({ error: 'Only customers can view favorite locations' });
-      }
-  
-      // The populated location documents will be in `customer.favoritesLocations`
-      res.status(200).json(customer.favoritesLocations);
+        const customer = await User.findById(req.user.id)
+            .populate('favoritesLocations')
+            .exec();
+
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+        if (customer.role !== 'Customer') {
+            return res.status(403).json({ error: 'Only customers can view favorite locations' });
+        }
+
+        res.status(200).json(customer.favoritesLocations);
     } catch (err) {
-      next(err);
+        next(err);
     }
-  };
+};
 
 module.exports = {
     addLocation,

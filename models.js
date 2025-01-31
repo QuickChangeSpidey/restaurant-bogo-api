@@ -1,19 +1,36 @@
 const mongoose = require('mongoose');
 
-// User Schema
+/**
+ * USER SCHEMA
+ * 
+ * CHANGES:
+ * 1) Added `cognitoSub` field (unique) to link a Cognito user to this Mongo document.
+ * 2) Made `password` optional if you're relying solely on Cognito for authentication.
+ *    (You can remove `password` entirely if you do not need it for any local auth.)
+ */
 const UserSchema = new mongoose.Schema({
+    // The unique identifier from Cognito (sub claim).
+    // Allows you to link the Cognito user to this local User doc.
+    cognitoSub: { type: String, unique: true, sparse: true },
+
     username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+
     role: { type: String, enum: ['Admin', 'Restaurant', 'Customer'], required: true },
     isActive: { type: Boolean, default: true },
     details: { type: mongoose.Schema.Types.Mixed },
+
+    // For Customer users who favorite specific Locations
     favoritesLocations: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Location' }],
 }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
 
-// Location Schema
+/**
+ * LOCATION SCHEMA
+ * 
+ * Links to a User with role = Restaurant via `restaurantId`.
+ */
 const LocationSchema = new mongoose.Schema({
     restaurantId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true },
@@ -21,7 +38,7 @@ const LocationSchema = new mongoose.Schema({
     address: { type: String, required: true },
     hours: { type: String },
     qrCode: { type: String },
-    geolocation: { // For geospatial queries
+    geolocation: {
         type: { type: String, default: 'Point', enum: ['Point'] },
         coordinates: { type: [Number], required: true }, // [longitude, latitude]
     },
@@ -29,11 +46,13 @@ const LocationSchema = new mongoose.Schema({
     ads: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Ad' }],
     coupons: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Coupon' }],
 }, { timestamps: true });
-LocationSchema.index({ geolocation: '2dsphere' }); // Geospatial index
+LocationSchema.index({ geolocation: '2dsphere' }); // Enable geospatial queries
 
 const Location = mongoose.model('Location', LocationSchema);
 
-// Menu Item Schema
+/**
+ * MENU ITEM SCHEMA
+ */
 const MenuItemSchema = new mongoose.Schema({
     locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
     name: { type: String, required: true },
@@ -45,7 +64,13 @@ const MenuItemSchema = new mongoose.Schema({
 
 const MenuItem = mongoose.model('MenuItem', MenuItemSchema);
 
-// Coupon Schema Update
+/**
+ * COUPON SCHEMA
+ * 
+ * CHANGES:
+ * 1) Added `quantity` field for total coupon availability.
+ * 2) Added `maxUsagePerUser` if you want to limit usage per user.
+ */
 const CouponSchema = new mongoose.Schema({
     locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
     type: {
@@ -63,25 +88,33 @@ const CouponSchema = new mongoose.Schema({
         ],
         required: true,
     },
-    code: { type: String, unique: true, required: true }, // Unique coupon code
-    discountValue: { type: Number }, // Discount value or percentage (optional based on type)
-    freeItemId: { type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }, // For FreeItem type
-    comboItems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }], // For Combo or FamilyPack
-    minimumSpend: { type: Number }, // For SpendMoreSaveMore or FlatDiscount
-    maxRedeemValue: { type: Number }, // Optional cap for FlatDiscount
-    portionSize: { type: String }, // For FamilyPack
-    startTime: { type: Date }, // For HappyHour or LimitedTime
+    code: { type: String, unique: true, required: true },
+    discountValue: { type: Number },
+    freeItemId: { type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' },
+    comboItems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
+    minimumSpend: { type: Number },
+    maxRedeemValue: { type: Number },
+    portionSize: { type: String },
+    startTime: { type: Date },
     endTime: { type: Date },
     generationDate: { type: Date, default: Date.now },
     expirationDate: { type: Date, required: true },
     isActive: { type: Boolean, default: true },
+
+    // How many total redemptions are available for this coupon
     quantity: { type: Number, default: 0 },
+
+    // Limit how many times a single user can redeem this coupon
     maxUsagePerUser: { type: Number, default: 1 }
 }, { timestamps: true });
 
 const Coupon = mongoose.model('Coupon', CouponSchema);
 
-// Coupon Redmption Table
+/**
+ * COUPON REDEMPTION SCHEMA
+ * 
+ * Tracks each redemption event for analytics / auditing.
+ */
 const CouponRedemptionSchema = new mongoose.Schema({
     couponId: { type: mongoose.Schema.Types.ObjectId, ref: 'Coupon', required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -89,21 +122,24 @@ const CouponRedemptionSchema = new mongoose.Schema({
     redeemedAt: { type: Date, default: Date.now },
 });
 
-// If needed, you can store a restaurantId as well, or derive it from location
 const CouponRedemption = mongoose.model('CouponRedemption', CouponRedemptionSchema);
 
-// Ad Schema
+/**
+ * AD SCHEMA
+ */
 const AdSchema = new mongoose.Schema({
     locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
     type: { type: String, enum: ['Video', 'Image'], required: true },
     content: { type: String, required: true },
     startDate: { type: Date, default: Date.now },
-    endDate: { type: Date }, // Optional scheduling
+    endDate: { type: Date },
 }, { timestamps: true });
 
 const Ad = mongoose.model('Ad', AdSchema);
 
-// Notification Schema
+/**
+ * NOTIFICATION SCHEMA
+ */
 const NotificationSchema = new mongoose.Schema({
     restaurantId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -114,13 +150,15 @@ const NotificationSchema = new mongoose.Schema({
 
 const Notification = mongoose.model('Notification', NotificationSchema);
 
-// Export all models
+/**
+ * EXPORT ALL MODELS
+ */
 module.exports = {
     User,
     Location,
     MenuItem,
     Coupon,
+    CouponRedemption,
     Ad,
     Notification,
-    CouponRedemption
 };
