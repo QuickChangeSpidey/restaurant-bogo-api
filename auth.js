@@ -1,10 +1,14 @@
+// auth.js
+
 const jwt = require('jsonwebtoken');
 
-// Verify JWT Token
+/**
+ * 1) Verify JWT
+ */
 const checkAuth = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
-        return res.status(401).json({ error: 'Unauthorized access' });
+        return res.status(401).json({ error: 'Unauthorized access: No token provided.' });
     }
 
     try {
@@ -12,13 +16,16 @@ const checkAuth = (req, res, next) => {
         req.user = decoded;
         next();
     } catch (error) {
-        res.status(401).json({ error: 'Invalid or expired token' });
+        return res.status(401).json({ error: 'Invalid or expired token' });
     }
 };
 
-// Role-based Authorization
-const checkRole = (role) => (req, res, next) => {
-    if (req.user.role !== role) {
+/**
+ * 2) Role-based Authorization
+ *    Instead of a single `role` param, accept multiple roles (spread syntax).
+ */
+const checkRole = (...allowedRoles) => (req, res, next) => {
+    if (!allowedRoles.includes(req.user.role)) {
         return res.status(403).json({ error: 'Forbidden: Insufficient privileges' });
     }
     next();
