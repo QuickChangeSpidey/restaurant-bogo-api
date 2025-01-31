@@ -42,34 +42,34 @@ const {
 const router = express.Router();
 
 // Restaurant Routes
-router.post('/locations', checkAuth, checkRole('Restaurant'), addLocation);
-router.put('/locations/:id', checkAuth, checkRole('Restaurant'), updateLocation);
-router.delete('/locations/:id', checkAuth, checkRole('Restaurant'), deleteLocation);
+router.post('/locations', checkAuth, checkRole('Restaurant','Admin'), addLocation);
+router.put('/locations/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateLocation);
+router.delete('/locations/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteLocation);
 router.get('/locations-with-coupons', getLocationsWithCoupons);
 
-router.post('/menu-items', checkAuth, checkRole('Restaurant'), addMenuItem);
-router.put('/menu-items/:id', checkAuth, checkRole('Restaurant'), updateMenuItem);
-router.delete('/menu-items/:id', checkAuth, checkRole('Restaurant'), deleteMenuItem);
+router.post('/menu-items', checkAuth, checkRole('Restaurant', 'Admin'), addMenuItem);
+router.put('/menu-items/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateMenuItem);
+router.delete('/menu-items/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteMenuItem);
 
-router.post('/coupons', checkAuth, checkRole('Restaurant'), generateCoupon);
-router.put('/coupons/:id', checkAuth, checkRole('Restaurant'), updateCoupon);
-router.delete('/coupons/:id', checkAuth, checkRole('Restaurant'), deleteCoupon);
-router.patch('/coupons/:id/activate', checkAuth, checkRole('Restaurant'), activateCoupon);
-router.patch('/coupons/:id/deactivate', checkAuth, checkRole('Restaurant'), deactivateCoupon);
+router.post('/coupons', checkAuth, checkRole('Restaurant', 'Admin'), generateCoupon);
+router.put('/coupons/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateCoupon);
+router.delete('/coupons/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteCoupon);
+router.patch('/coupons/:id/activate', checkAuth, checkRole('Restaurant', 'Admin'), activateCoupon);
+router.patch('/coupons/:id/deactivate', checkAuth, checkRole('Restaurant', 'Admin'), deactivateCoupon);
 router.get('/coupons/:locationId', getCouponsByLocationId);
-router.post('/coupons/redeem', checkAuth, checkRole('Customer'), redeemCoupon);
+router.post('/coupons/redeem', checkAuth, checkRole('Customer','Restaurant','Admin'), redeemCoupon);
 
-router.post('/ads', checkAuth, checkRole('Restaurant'), addAd);
-router.put('/ads/:id', checkAuth, checkRole('Restaurant'), updateAd);
-router.delete('/ads/:id', checkAuth, checkRole('Restaurant'), deleteAd);
+router.post('/ads', checkAuth, checkRole('Restaurant', 'Admin'), addAd);
+router.put('/ads/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateAd);
+router.delete('/ads/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteAd);
 
-router.post('/notifications', checkAuth, checkRole('Restaurant'), sendNotifications);
+router.post('/notifications', checkAuth, checkRole('Restaurant', 'Admin'), sendNotifications);
 
-router.put('/account', checkAuth, checkRole('Restaurant'), updateRestaurantDetails);
+router.put('/account', checkAuth, checkRole('Restaurant', 'Admin'), updateRestaurantDetails);
 
-router.post('/customers', checkAuth, checkRole('Restaurant'), storeCustomerInfo);
-router.put('/customers/:id', checkAuth, checkRole('Restaurant'), updateCustomerInfo);
-router.delete('/customers/:id', checkAuth, checkRole('Restaurant'), deleteCustomerInfo);
+router.post('/customers', checkAuth, checkRole('Restaurant', 'Admin'), storeCustomerInfo);
+router.put('/customers/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateCustomerInfo);
+router.delete('/customers/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteCustomerInfo);
 
 router.post('/favorites/locations/:locationId', checkAuth, checkRole('Customer'), addLocationToFavorites);
 router.delete('/favorites/locations/:locationId', checkAuth, checkRole('Customer'), removeLocationFromFavorites);
@@ -84,7 +84,7 @@ router.get('/favorites/locations', checkAuth, checkRole('Customer'), getFavorite
 router.get(
   '/analytics/redemptions/date-range',
   checkAuth,
-  checkRole('Restaurant'), // or 'Admin' if needed
+  checkRole('Restaurant', 'Admin'), // or 'Admin' if needed
   getRedemptionsByDate
 );
 
@@ -92,7 +92,7 @@ router.get(
 router.get(
   '/analytics/redemptions/summary',
   checkAuth,
-  checkRole('Restaurant'), // or 'Admin'
+  checkRole('Restaurant', 'Admin'), // or 'Admin'
   getCouponUsageSummary
 );
 
@@ -101,7 +101,7 @@ router.get(
 router.get(
   '/analytics/redemptions/user/:userId',
   checkAuth,
-  checkRole('Restaurant'), // or 'Admin'
+  checkRole('Restaurant', 'Admin'), // or 'Admin'
   getRedemptionsByUser
 );
 
@@ -110,7 +110,7 @@ router.get(
 router.get(
   '/analytics/customers/top',
   checkAuth,
-  checkRole('Restaurant'), // or 'Admin'
+  checkRole('Restaurant', 'Admin'), // or 'Admin'
   getTopCustomers
 );
 
@@ -119,7 +119,7 @@ router.get(
 router.get(
   '/analytics/coupons/top-redeemed',
   checkAuth,
-  checkRole('Restaurant'), // or 'Admin'
+  checkRole('Restaurant', 'Admin'), // or 'Admin'
   getTopRedeemedCoupons
 );
 
@@ -129,7 +129,7 @@ router.get(
 router.get(
   '/analytics/locations/usage',
   checkAuth,
-  checkRole('Restaurant'), // or 'Admin'
+  checkRole('Restaurant', 'Admin'), // or 'Admin'
   getCouponUsageByLocation
 );
 
@@ -138,7 +138,7 @@ router.get(
 router.get(
   '/analytics/redemptions/daily',
   checkAuth,
-  checkRole('Restaurant'), // or 'Admin'
+  checkRole('Restaurant', 'Admin'), // or 'Admin'
   getDailyRedemptions
 );
 
@@ -147,7 +147,7 @@ router.get(
 router.get(
   '/analytics/coupons/types',
   checkAuth,
-  checkRole('Restaurant'), // or 'Admin'
+  checkRole('Restaurant', 'Admin'), // or 'Admin'
   getRedemptionsByCouponType
 );
 
