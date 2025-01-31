@@ -67,8 +67,8 @@ router.post('/coupons/redeem', checkAuth, checkRole('Customer','Restaurant','Adm
 router.get(
   '/locations/:locationId/redeeming-customers',
   checkAuth,
-  checkRole('Restaurant', 'Admin'),  // Only Restaurant or Admin can access
-  getRedeemingCustomersByLocation   // Controller function
+  checkRole('Restaurant', 'Admin'),
+  getRedeemingCustomersByLocation
 );
 router.get(
   '/locations/:locationId/customers/:customerId/coupons-used',
