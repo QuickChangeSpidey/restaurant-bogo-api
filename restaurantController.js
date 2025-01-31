@@ -572,6 +572,61 @@ const getFavoriteLocations = async (req, res, next) => {
     }
 };
 
+/**
+ * Get all coupons a specific customer used at a given location
+ */
+const getCouponsUsedByCustomerAtLocation = async (req, res, next) => {
+    try {
+      const { customerId, locationId } = req.params;
+      
+      // 1) Find all redemption records for this customer at this location
+      const redemptions = await CouponRedemption.find({
+        userId: customerId,
+        locationId
+      })
+        // 2) Populate the coupon details (e.g., type, code, discountValue)
+        .populate('couponId', 'type code discountValue expirationDate')
+        // (Optional) also populate the location or user if you need that info
+        // .populate('locationId', 'name address')
+        .exec();
+  
+      // 3) Extract the actual coupons from each redemption
+      //    (They are in redemption.couponId because of the populate)
+      const usedCoupons = redemptions.map((redemption) => redemption.couponId);
+  
+      // 4) Return them to the client
+      res.status(200).json(usedCoupons);
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  const getRedeemingCustomersByLocation = async (req, res, next) => {
+    try {
+        const { locationId } = req.params;
+
+        // 1) Find all redemption records for this location
+        const redemptions = await CouponRedemption.find({ locationId })
+            .populate('userId', 'username email'); 
+        // .populate('userId') would load the full user doc
+        // Passing second param 'username email' picks only these fields
+
+        // 2) Extract user objects
+        const allUsers = redemptions.map(r => r.userId);
+
+        // 3) Filter out duplicates
+        const uniqueUsersMap = new Map();
+        allUsers.forEach((user) => {
+            uniqueUsersMap.set(user._id.toString(), user);
+        });
+        const uniqueUsers = Array.from(uniqueUsersMap.values());
+
+        res.status(200).json(uniqueUsers);
+    } catch (err) {
+        next(err);
+    }
+};
+
 module.exports = {
     addLocation,
     updateLocation,
@@ -597,5 +652,7 @@ module.exports = {
     addLocationToFavorites,
     removeLocationFromFavorites,
     getFavoriteLocations,
-    redeemCoupon
+    redeemCoupon,
+    getCouponsUsedByCustomerAtLocation,
+    getRedeemingCustomersByLocation
 };

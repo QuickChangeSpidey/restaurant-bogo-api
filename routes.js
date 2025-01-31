@@ -25,7 +25,9 @@ const {
   addLocationToFavorites,
   removeLocationFromFavorites,
   getFavoriteLocations,
-  redeemCoupon
+  redeemCoupon,
+  getCouponsUsedByCustomerAtLocation,
+  getRedeemingCustomersByLocation
 } = require('./restaurantController');
 
 const {
@@ -58,6 +60,22 @@ router.patch('/coupons/:id/activate', checkAuth, checkRole('Restaurant', 'Admin'
 router.patch('/coupons/:id/deactivate', checkAuth, checkRole('Restaurant', 'Admin'), deactivateCoupon);
 router.get('/coupons/:locationId', getCouponsByLocationId);
 router.post('/coupons/redeem', checkAuth, checkRole('Customer','Restaurant','Admin'), redeemCoupon);
+/**
+ * Get a list of distinct customers who have redeemed coupons at a specific location.
+ * Example: GET /locations/<LOCATION_ID>/redeeming-customers
+ */
+router.get(
+  '/locations/:locationId/redeeming-customers',
+  checkAuth,
+  checkRole('Restaurant', 'Admin'),  // Only Restaurant or Admin can access
+  getRedeemingCustomersByLocation   // Controller function
+);
+router.get(
+  '/locations/:locationId/customers/:customerId/coupons-used',
+  checkAuth,
+  checkRole('Restaurant', 'Admin'),
+  getCouponsUsedByCustomerAtLocation
+);
 
 router.post('/ads', checkAuth, checkRole('Restaurant', 'Admin'), addAd);
 router.put('/ads/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateAd);
