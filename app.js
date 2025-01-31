@@ -2,7 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const connectDB = require("./db");
 const cors = require('cors');
-const QRCode = require('qrcode'); // Add QR code generation dependency
+const QRCode = require('qrcode');
 const { checkAuth, checkRole } = require('./auth');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
@@ -17,8 +17,8 @@ app.use(cors());
 // Protected Swagger route
 app.use(
   '/api-docs',
-  checkAuth,                // first ensure user is authenticated
-  checkRole('Admin'),       // then ensure user has Admin role
+  checkAuth,
+  checkRole('Admin'),
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec)
 );
@@ -40,24 +40,24 @@ app.use("/api", require("./routes"));
 // QR code generation
 app.post('/api/locations/:id/generate-qr', checkAuth, checkRole('Restaurant'), async (req, res) => {
   try {
-      const { id } = req.params;
+    const { id } = req.params;
 
 
-      if (!location) {
-          return res.status(404).json({ error: 'Location not found' });
-      }
+    if (!location) {
+      return res.status(404).json({ error: 'Location not found' });
+    }
 
-      // Generate QR code with location details
-      const qrCodeText = `${id}`;
-      const qrCode = await QRCode.toDataURL(qrCodeText);
+    // Generate QR code with location details
+    const qrCodeText = `${id}`;
+    const qrCode = await QRCode.toDataURL(qrCodeText);
 
-      // Update the location with the generated QR code
-      location.qrCode = qrCode;
-      await location.save();
+    // Update the location with the generated QR code
+    location.qrCode = qrCode;
+    await location.save();
 
-      res.status(200).json({ message: 'QR code generated successfully', qrCode });
+    res.status(200).json({ message: 'QR code generated successfully', qrCode });
   } catch (err) {
-      res.status(500).json({ error: 'Failed to generate QR code', details: err.message });
+    res.status(500).json({ error: 'Failed to generate QR code', details: err.message });
   }
 });
 
@@ -73,5 +73,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-  console.log('Swagger docs at http://localhost:5000/api-docs');
+  console.log('Swagger docs at http://localhost:5000/api-docs (Admin Only)');
 });
