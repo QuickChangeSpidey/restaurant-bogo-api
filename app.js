@@ -4,6 +4,8 @@ const connectDB = require("./db");
 const cors = require('cors');
 const QRCode = require('qrcode'); // Add QR code generation dependency
 const { checkAuth, checkRole } = require('./auth');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
 
 const app = express();
 
@@ -11,6 +13,15 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
+
+// Protected Swagger route
+app.use(
+  '/api-docs',
+  checkAuth,                // first ensure user is authenticated
+  checkRole('Admin'),       // then ensure user has Admin role
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec)
+);
 
 // Connect to MongoDB
 (async () => {
@@ -62,4 +73,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log('Swagger docs at http://localhost:5000/api-docs');
 });

@@ -31,38 +31,398 @@ const {
 } = require('./restaurantController');
 
 const {
-  getRedemptionsByDate,       // Aggregates coupon redemptions over a specified date range
-  getCouponUsageSummary,      // Summarizes total redemptions (e.g., grouped by coupon)
-  getRedemptionsByUser,       // Retrieves coupon redemptions for a specific user
-  getTopCustomers,            // Finds which customers redeem the most coupons
-  getTopRedeemedCoupons,      // Lists coupons in descending order of total redemptions
-  getCouponUsageByLocation,   // Shows how many coupon redemptions occurred per location
-  getDailyRedemptions,        // Returns a daily breakdown of redemptions (useful for charts)
-  getRedemptionsByCouponType, // Shows redemption counts grouped by coupon type (BOGO, FlatDiscount, etc.)
+  getRedemptionsByDate,
+  getCouponUsageSummary,
+  getRedemptionsByUser,
+  getTopCustomers,
+  getTopRedeemedCoupons,
+  getCouponUsageByLocation,
+  getDailyRedemptions,
+  getRedemptionsByCouponType,
 } = require('./analyticsController.js');
 
 const router = express.Router();
 
-// Restaurant Routes
+/**
+ * @openapi
+ * /locations:
+ *   post:
+ *     tags:
+ *       - Locations
+ *     summary: Add a new location
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *             required:
+ *               - name
+ *               - address
+ *     responses:
+ *       201:
+ *         description: Location created successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
 router.post('/locations', checkAuth, checkRole('Restaurant','Admin'), addLocation);
+
+/**
+ * @openapi
+ * /locations/{id}:
+ *   put:
+ *     tags:
+ *       - Locations
+ *     summary: Update an existing location
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         description: Location ID
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Location updated successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
 router.put('/locations/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateLocation);
+
+/**
+ * @openapi
+ * /locations/{id}:
+ *   delete:
+ *     tags:
+ *       - Locations
+ *     summary: Delete a location
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         description: Location ID
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Location deleted
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
 router.delete('/locations/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteLocation);
+
+/**
+ * @openapi
+ * /locations-with-coupons:
+ *   get:
+ *     tags:
+ *       - Locations
+ *     summary: Get all locations with coupons
+ *     responses:
+ *       200:
+ *         description: Returns a list of locations along with coupon data
+ */
 router.get('/locations-with-coupons', getLocationsWithCoupons);
 
+/**
+ * @openapi
+ * /menu-items:
+ *   post:
+ *     tags:
+ *       - Menu Items
+ *     summary: Add a new menu item
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *             required:
+ *               - name
+ *               - price
+ *     responses:
+ *       201:
+ *         description: Menu item created
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
 router.post('/menu-items', checkAuth, checkRole('Restaurant', 'Admin'), addMenuItem);
+
+/**
+ * @openapi
+ * /menu-items/{id}:
+ *   put:
+ *     tags:
+ *       - Menu Items
+ *     summary: Update a menu item
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         description: Menu item ID
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Menu item updated
+ */
 router.put('/menu-items/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateMenuItem);
+
+/**
+ * @openapi
+ * /menu-items/{id}:
+ *   delete:
+ *     tags:
+ *       - Menu Items
+ *     summary: Delete a menu item
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Menu item ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Menu item deleted
+ */
 router.delete('/menu-items/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteMenuItem);
 
-router.post('/coupons', checkAuth, checkRole('Restaurant', 'Admin'), generateCoupon);
-router.put('/coupons/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateCoupon);
-router.delete('/coupons/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteCoupon);
-router.patch('/coupons/:id/activate', checkAuth, checkRole('Restaurant', 'Admin'), activateCoupon);
-router.patch('/coupons/:id/deactivate', checkAuth, checkRole('Restaurant', 'Admin'), deactivateCoupon);
-router.get('/coupons/:locationId', getCouponsByLocationId);
-router.post('/coupons/redeem', checkAuth, checkRole('Customer','Restaurant','Admin'), redeemCoupon);
 /**
- * Get a list of distinct customers who have redeemed coupons at a specific location.
- * Example: GET /locations/<LOCATION_ID>/redeeming-customers
+ * @openapi
+ * /coupons:
+ *   post:
+ *     tags:
+ *       - Coupons
+ *     summary: Generate a new coupon
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               discountType:
+ *                 type: string
+ *               discountValue:
+ *                 type: number
+ *               expirationDate:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Coupon created
+ */
+router.post('/coupons', checkAuth, checkRole('Restaurant', 'Admin'), generateCoupon);
+
+/**
+ * @openapi
+ * /coupons/{id}:
+ *   put:
+ *     tags:
+ *       - Coupons
+ *     summary: Update an existing coupon
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Coupon ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Coupon updated
+ */
+router.put('/coupons/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateCoupon);
+
+/**
+ * @openapi
+ * /coupons/{id}:
+ *   delete:
+ *     tags:
+ *       - Coupons
+ *     summary: Delete a coupon
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Coupon ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Coupon deleted
+ */
+router.delete('/coupons/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteCoupon);
+
+/**
+ * @openapi
+ * /coupons/{id}/activate:
+ *   patch:
+ *     tags:
+ *       - Coupons
+ *     summary: Activate a coupon
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Coupon ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Coupon activated
+ */
+router.patch('/coupons/:id/activate', checkAuth, checkRole('Restaurant', 'Admin'), activateCoupon);
+
+/**
+ * @openapi
+ * /coupons/{id}/deactivate:
+ *   patch:
+ *     tags:
+ *       - Coupons
+ *     summary: Deactivate a coupon
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Coupon ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Coupon deactivated
+ */
+router.patch('/coupons/:id/deactivate', checkAuth, checkRole('Restaurant', 'Admin'), deactivateCoupon);
+
+/**
+ * @openapi
+ * /coupons/{locationId}:
+ *   get:
+ *     tags:
+ *       - Coupons
+ *     summary: Get coupons by location ID
+ *     parameters:
+ *       - name: locationId
+ *         in: path
+ *         required: true
+ *         description: Location ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Returns coupons for the specified location
+ */
+router.get('/coupons/:locationId', getCouponsByLocationId);
+
+/**
+ * @openapi
+ * /coupons/redeem:
+ *   post:
+ *     tags:
+ *       - Coupons
+ *     summary: Redeem a coupon
+ *     description: Requires Customer, Restaurant, or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               couponId:
+ *                 type: string
+ *               locationId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Coupon redeemed successfully
+ */
+router.post('/coupons/redeem', checkAuth, checkRole('Customer','Restaurant','Admin'), redeemCoupon);
+
+/**
+ * @openapi
+ * /locations/{locationId}/redeeming-customers:
+ *   get:
+ *     tags:
+ *       - Coupons
+ *     summary: Get a list of distinct customers who have redeemed coupons at a specific location
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: locationId
+ *         in: path
+ *         required: true
+ *         description: The ID of the location
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: A list of customer IDs or profiles
  */
 router.get(
   '/locations/:locationId/redeeming-customers',
@@ -70,6 +430,28 @@ router.get(
   checkRole('Restaurant', 'Admin'),
   getRedeemingCustomersByLocation
 );
+
+/**
+ * @openapi
+ * /locations/{locationId}/customers/{customerId}/coupons-used:
+ *   get:
+ *     tags:
+ *       - Coupons
+ *     summary: Get coupons used by a particular customer at a location
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: locationId
+ *         in: path
+ *         required: true
+ *       - name: customerId
+ *         in: path
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: List of coupons redeemed by the given customer at the specified location
+ */
 router.get(
   '/locations/:locationId/customers/:customerId/coupons-used',
   checkAuth,
@@ -77,97 +459,393 @@ router.get(
   getCouponsUsedByCustomerAtLocation
 );
 
+/**
+ * @openapi
+ * /ads:
+ *   post:
+ *     tags:
+ *       - Ads
+ *     summary: Create a new ad
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Ad created
+ */
 router.post('/ads', checkAuth, checkRole('Restaurant', 'Admin'), addAd);
-router.put('/ads/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateAd);
-router.delete('/ads/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteAd);
-
-router.post('/notifications', checkAuth, checkRole('Restaurant', 'Admin'), sendNotifications);
-
-router.put('/account', checkAuth, checkRole('Restaurant', 'Admin'), updateRestaurantDetails);
-
-router.post('/customers', checkAuth, checkRole('Restaurant', 'Admin'), storeCustomerInfo);
-router.put('/customers/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateCustomerInfo);
-router.delete('/customers/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteCustomerInfo);
-
-router.post('/favorites/locations/:locationId', checkAuth, checkRole('Customer'), addLocationToFavorites);
-router.delete('/favorites/locations/:locationId', checkAuth, checkRole('Customer'), removeLocationFromFavorites);
-router.get('/favorites/locations', checkAuth, checkRole('Customer'), getFavoriteLocations);
 
 /**
- * ANALYTICS ROUTES
+ * @openapi
+ * /ads/{id}:
+ *   put:
+ *     tags:
+ *       - Ads
+ *     summary: Update an ad
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Ad ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Ad updated
  */
+router.put('/ads/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateAd);
 
-// 1) Get redemptions by date range
-// Example usage: GET /analytics/redemptions/date-range?start=2025-01-01&end=2025-01-31
-router.get(
-  '/analytics/redemptions/date-range',
-  checkAuth,
-  checkRole('Restaurant', 'Admin'), // or 'Admin' if needed
-  getRedemptionsByDate
-);
+/**
+ * @openapi
+ * /ads/{id}:
+ *   delete:
+ *     tags:
+ *       - Ads
+ *     summary: Delete an ad
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Ad ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Ad deleted
+ */
+router.delete('/ads/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteAd);
 
-// 2) Get overall coupon usage summary (e.g., total redemptions by coupon, etc.)
-router.get(
-  '/analytics/redemptions/summary',
-  checkAuth,
-  checkRole('Restaurant', 'Admin'), // or 'Admin'
-  getCouponUsageSummary
-);
+/**
+ * @openapi
+ * /notifications:
+ *   post:
+ *     tags:
+ *       - Notifications
+ *     summary: Send notifications
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Notifications sent
+ */
+router.post('/notifications', checkAuth, checkRole('Restaurant', 'Admin'), sendNotifications);
 
-// 3) Get redemptions by user
-// Example usage: GET /analytics/redemptions/user/<USER_ID>
-router.get(
-  '/analytics/redemptions/user/:userId',
-  checkAuth,
-  checkRole('Restaurant', 'Admin'), // or 'Admin'
-  getRedemptionsByUser
-);
+/**
+ * @openapi
+ * /account:
+ *   put:
+ *     tags:
+ *       - Restaurant
+ *     summary: Update restaurant details
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Account updated
+ */
+router.put('/account', checkAuth, checkRole('Restaurant', 'Admin'), updateRestaurantDetails);
 
-// 4) Get top customers (those who redeem the most coupons)
-// Example usage: GET /analytics/customers/top
-router.get(
-  '/analytics/customers/top',
-  checkAuth,
-  checkRole('Restaurant', 'Admin'), // or 'Admin'
-  getTopCustomers
-);
+/**
+ * @openapi
+ * /customers:
+ *   post:
+ *     tags:
+ *       - Customers
+ *     summary: Store new customer info
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Customer info stored
+ */
+router.post('/customers', checkAuth, checkRole('Restaurant', 'Admin'), storeCustomerInfo);
 
-// 5) Get top redeemed coupons (by total redemption count)
-// Example usage: GET /analytics/coupons/top-redeemed
-router.get(
-  '/analytics/coupons/top-redeemed',
-  checkAuth,
-  checkRole('Restaurant', 'Admin'), // or 'Admin'
-  getTopRedeemedCoupons
-);
+/**
+ * @openapi
+ * /customers/{id}:
+ *   put:
+ *     tags:
+ *       - Customers
+ *     summary: Update customer info
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Customer ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Customer info updated
+ */
+router.put('/customers/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateCustomerInfo);
 
-// 6) Get coupon usage by location
-// Example usage: GET /analytics/locations/usage?locationId=<LOCATION_ID>
-// If no locationId is provided, returns usage for all locations
-router.get(
-  '/analytics/locations/usage',
-  checkAuth,
-  checkRole('Restaurant', 'Admin'), // or 'Admin'
-  getCouponUsageByLocation
-);
+/**
+ * @openapi
+ * /customers/{id}:
+ *   delete:
+ *     tags:
+ *       - Customers
+ *     summary: Delete customer info
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Customer ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Customer info deleted
+ */
+router.delete('/customers/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteCustomerInfo);
 
-// 7) Get daily redemptions (time-based breakdown)
-// Example usage: GET /analytics/redemptions/daily?start=2025-01-01&end=2025-01-31
-router.get(
-  '/analytics/redemptions/daily',
-  checkAuth,
-  checkRole('Restaurant', 'Admin'), // or 'Admin'
-  getDailyRedemptions
-);
+/**
+ * @openapi
+ * /favorites/locations/{locationId}:
+ *   post:
+ *     tags:
+ *       - Favorites
+ *     summary: Add a location to favorites
+ *     description: Requires Customer role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: locationId
+ *         in: path
+ *         required: true
+ *         description: Location ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       201:
+ *         description: Location added to favorites
+ */
+router.post('/favorites/locations/:locationId', checkAuth, checkRole('Customer'), addLocationToFavorites);
 
-// 8) Get redemptions by coupon type (e.g., BOGO, FlatDiscount, FamilyPack, etc.)
-// Example usage: GET /analytics/coupons/types
-router.get(
-  '/analytics/coupons/types',
-  checkAuth,
-  checkRole('Restaurant', 'Admin'), // or 'Admin'
-  getRedemptionsByCouponType
-);
+/**
+ * @openapi
+ * /favorites/locations/{locationId}:
+ *   delete:
+ *     tags:
+ *       - Favorites
+ *     summary: Remove a location from favorites
+ *     description: Requires Customer role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: locationId
+ *         in: path
+ *         required: true
+ *         description: Location ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Location removed from favorites
+ */
+router.delete('/favorites/locations/:locationId', checkAuth, checkRole('Customer'), removeLocationFromFavorites);
 
+/**
+ * @openapi
+ * /favorites/locations:
+ *   get:
+ *     tags:
+ *       - Favorites
+ *     summary: Get all favorite locations
+ *     description: Requires Customer role.
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of favorite locations
+ */
+router.get('/favorites/locations', checkAuth, checkRole('Customer'), getFavoriteLocations);
+
+/* ======================
+   ANALYTICS ROUTES
+   ====================== */
+
+/**
+ * @openapi
+ * /analytics/redemptions/date-range:
+ *   get:
+ *     tags:
+ *       - Analytics
+ *     summary: Get redemptions by date range
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: start
+ *         in: query
+ *         required: false
+ *         description: Start date (YYYY-MM-DD)
+ *         schema:
+ *           type: string
+ *       - name: end
+ *         in: query
+ *         required: false
+ *         description: End date (YYYY-MM-DD)
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Returns coupon redemptions in the specified date range
+ */
+router.get('/analytics/redemptions/date-range', checkAuth, checkRole('Restaurant', 'Admin'), getRedemptionsByDate);
+
+/**
+ * @openapi
+ * /analytics/redemptions/summary:
+ *   get:
+ *     tags:
+ *       - Analytics
+ *     summary: Get overall coupon usage summary
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Summary of coupon usage
+ */
+router.get('/analytics/redemptions/summary', checkAuth, checkRole('Restaurant', 'Admin'), getCouponUsageSummary);
+
+/**
+ * @openapi
+ * /analytics/redemptions/user/{userId}:
+ *   get:
+ *     tags:
+ *       - Analytics
+ *     summary: Get redemptions by user
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: userId
+ *         in: path
+ *         required: true
+ *         description: User ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Redemptions for the specified user
+ */
+router.get('/analytics/redemptions/user/:userId', checkAuth, checkRole('Restaurant', 'Admin'), getRedemptionsByUser);
+
+/**
+ * @openapi
+ * /analytics/customers/top:
+ *   get:
+ *     tags:
+ *       - Analytics
+ *     summary: Get top customers by redemption count
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of top customers
+ */
+router.get('/analytics/customers/top', checkAuth, checkRole('Restaurant', 'Admin'), getTopCustomers);
+
+/**
+ * @openapi
+ * /analytics/coupons/top-redeemed:
+ *   get:
+ *     tags:
+ *       - Analytics
+ *     summary: Get top redeemed coupons
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Coupons in descending order of redemption count
+ */
+router.get('/analytics/coupons/top-redeemed', checkAuth, checkRole('Restaurant', 'Admin'), getTopRedeemedCoupons);
+
+/**
+ * @openapi
+ * /analytics/locations/usage:
+ *   get:
+ *     tags:
+ *       - Analytics
+ *     summary: Get coupon usage by location
+ *     description: If locationId is omitted, returns usage for all locations. Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: locationId
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Coupon usage stats
+ */
+router.get('/analytics/locations/usage', checkAuth, checkRole('Restaurant', 'Admin'), getCouponUsageByLocation);
+
+/**
+ * @openapi
+ * /analytics/redemptions/daily:
+ *   get:
+ *     tags:
+ *       - Analytics
+ *     summary: Get daily redemptions breakdown
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: start
+ *         in: query
+ *         required: false
+ *         description: Start date (YYYY-MM-DD)
+ *         schema:
+ *           type: string
+ *       - name: end
+ *         in: query
+ *         required: false
+ *         description: End date (YYYY-MM-DD)
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Daily redemptions in the given date range
+ */
+router.get('/analytics/redemptions/daily', checkAuth, checkRole('Restaurant', 'Admin'), getDailyRedemptions);
+
+/**
+ * @openapi
+ * /analytics/coupons/types:
+ *   get:
+ *     tags:
+ *       - Analytics
+ *     summary: Get redemptions grouped by coupon type
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Redemption counts by coupon type
+ */
+router.get('/analytics/coupons/types', checkAuth, checkRole('Restaurant', 'Admin'), getRedemptionsByCouponType);
 
 module.exports = router;
