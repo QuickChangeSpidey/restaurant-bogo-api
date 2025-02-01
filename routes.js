@@ -75,7 +75,7 @@ const router = express.Router();
  *       403:
  *         description: Forbidden
  */
-router.post('/locations', checkAuth, checkRole('Restaurant','Admin'), addLocation);
+router.post('/api/locations', checkAuth, checkRole('Restaurant','Admin'), addLocation);
 
 /**
  * @openapi
@@ -113,7 +113,7 @@ router.post('/locations', checkAuth, checkRole('Restaurant','Admin'), addLocatio
  *       403:
  *         description: Forbidden
  */
-router.put('/locations/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateLocation);
+router.put('/api/locations/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateLocation);
 
 /**
  * @openapi
@@ -140,7 +140,7 @@ router.put('/locations/:id', checkAuth, checkRole('Restaurant', 'Admin'), update
  *       403:
  *         description: Forbidden
  */
-router.delete('/locations/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteLocation);
+router.delete('/api/locations/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteLocation);
 
 /**
  * @openapi
@@ -153,7 +153,7 @@ router.delete('/locations/:id', checkAuth, checkRole('Restaurant', 'Admin'), del
  *       200:
  *         description: Returns a list of locations along with coupon data
  */
-router.get('/locations-with-coupons', getLocationsWithCoupons);
+router.get('/api/locations-with-coupons', getLocationsWithCoupons);
 
 /**
  * @openapi
@@ -187,7 +187,7 @@ router.get('/locations-with-coupons', getLocationsWithCoupons);
  *       403:
  *         description: Forbidden
  */
-router.post('/menu-items', checkAuth, checkRole('Restaurant', 'Admin'), addMenuItem);
+router.post('/api/menu-items', checkAuth, checkRole('Restaurant', 'Admin'), addMenuItem);
 
 /**
  * @openapi
@@ -210,7 +210,7 @@ router.post('/menu-items', checkAuth, checkRole('Restaurant', 'Admin'), addMenuI
  *       200:
  *         description: Menu item updated
  */
-router.put('/menu-items/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateMenuItem);
+router.put('/api/menu-items/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateMenuItem);
 
 /**
  * @openapi
@@ -233,7 +233,7 @@ router.put('/menu-items/:id', checkAuth, checkRole('Restaurant', 'Admin'), updat
  *       204:
  *         description: Menu item deleted
  */
-router.delete('/menu-items/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteMenuItem);
+router.delete('/api/menu-items/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteMenuItem);
 
 /**
  * @openapi
@@ -262,7 +262,7 @@ router.delete('/menu-items/:id', checkAuth, checkRole('Restaurant', 'Admin'), de
  *       201:
  *         description: Coupon created
  */
-router.post('/coupons', checkAuth, checkRole('Restaurant', 'Admin'), generateCoupon);
+router.post('/api/coupons', checkAuth, checkRole('Restaurant', 'Admin'), generateCoupon);
 
 /**
  * @openapi
@@ -285,7 +285,7 @@ router.post('/coupons', checkAuth, checkRole('Restaurant', 'Admin'), generateCou
  *       200:
  *         description: Coupon updated
  */
-router.put('/coupons/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateCoupon);
+router.put('/api/coupons/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateCoupon);
 
 /**
  * @openapi
@@ -308,7 +308,7 @@ router.put('/coupons/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateCo
  *       204:
  *         description: Coupon deleted
  */
-router.delete('/coupons/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteCoupon);
+router.delete('/api/coupons/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteCoupon);
 
 /**
  * @openapi
@@ -331,7 +331,7 @@ router.delete('/coupons/:id', checkAuth, checkRole('Restaurant', 'Admin'), delet
  *       200:
  *         description: Coupon activated
  */
-router.patch('/coupons/:id/activate', checkAuth, checkRole('Restaurant', 'Admin'), activateCoupon);
+router.patch('/api/coupons/:id/activate', checkAuth, checkRole('Restaurant', 'Admin'), activateCoupon);
 
 /**
  * @openapi
@@ -354,7 +354,7 @@ router.patch('/coupons/:id/activate', checkAuth, checkRole('Restaurant', 'Admin'
  *       200:
  *         description: Coupon deactivated
  */
-router.patch('/coupons/:id/deactivate', checkAuth, checkRole('Restaurant', 'Admin'), deactivateCoupon);
+router.patch('/api/coupons/:id/deactivate', checkAuth, checkRole('Restaurant', 'Admin'), deactivateCoupon);
 
 /**
  * @openapi
@@ -374,7 +374,7 @@ router.patch('/coupons/:id/deactivate', checkAuth, checkRole('Restaurant', 'Admi
  *       200:
  *         description: Returns coupons for the specified location
  */
-router.get('/coupons/:locationId', getCouponsByLocationId);
+router.get('/api/coupons/:locationId', getCouponsByLocationId);
 
 /**
  * @openapi
@@ -401,7 +401,7 @@ router.get('/coupons/:locationId', getCouponsByLocationId);
  *       200:
  *         description: Coupon redeemed successfully
  */
-router.post('/coupons/redeem', checkAuth, checkRole('Customer','Restaurant','Admin'), redeemCoupon);
+router.post('/api/coupons/redeem', checkAuth, checkRole('Customer','Restaurant','Admin'), redeemCoupon);
 
 /**
  * @openapi
@@ -425,7 +425,7 @@ router.post('/coupons/redeem', checkAuth, checkRole('Customer','Restaurant','Adm
  *         description: A list of customer IDs or profiles
  */
 router.get(
-  '/locations/:locationId/redeeming-customers',
+  '/api/locations/:locationId/redeeming-customers',
   checkAuth,
   checkRole('Restaurant', 'Admin'),
   getRedeemingCustomersByLocation
@@ -453,7 +453,7 @@ router.get(
  *         description: List of coupons redeemed by the given customer at the specified location
  */
 router.get(
-  '/locations/:locationId/customers/:customerId/coupons-used',
+  '/api/locations/:locationId/customers/:customerId/coupons-used',
   checkAuth,
   checkRole('Restaurant', 'Admin'),
   getCouponsUsedByCustomerAtLocation
@@ -473,7 +473,7 @@ router.get(
  *       201:
  *         description: Ad created
  */
-router.post('/ads', checkAuth, checkRole('Restaurant', 'Admin'), addAd);
+router.post('/api/ads', checkAuth, checkRole('Restaurant', 'Admin'), addAd);
 
 /**
  * @openapi
@@ -496,7 +496,7 @@ router.post('/ads', checkAuth, checkRole('Restaurant', 'Admin'), addAd);
  *       200:
  *         description: Ad updated
  */
-router.put('/ads/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateAd);
+router.put('/api/ads/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateAd);
 
 /**
  * @openapi
@@ -519,7 +519,7 @@ router.put('/ads/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateAd);
  *       204:
  *         description: Ad deleted
  */
-router.delete('/ads/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteAd);
+router.delete('/api/ads/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteAd);
 
 /**
  * @openapi
@@ -535,7 +535,7 @@ router.delete('/ads/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteAd)
  *       200:
  *         description: Notifications sent
  */
-router.post('/notifications', checkAuth, checkRole('Restaurant', 'Admin'), sendNotifications);
+router.post('/api/notifications', checkAuth, checkRole('Restaurant', 'Admin'), sendNotifications);
 
 /**
  * @openapi
@@ -551,7 +551,7 @@ router.post('/notifications', checkAuth, checkRole('Restaurant', 'Admin'), sendN
  *       200:
  *         description: Account updated
  */
-router.put('/account', checkAuth, checkRole('Restaurant', 'Admin'), updateRestaurantDetails);
+router.put('/api/account', checkAuth, checkRole('Restaurant', 'Admin'), updateRestaurantDetails);
 
 /**
  * @openapi
@@ -567,7 +567,7 @@ router.put('/account', checkAuth, checkRole('Restaurant', 'Admin'), updateRestau
  *       201:
  *         description: Customer info stored
  */
-router.post('/customers', checkAuth, checkRole('Restaurant', 'Admin'), storeCustomerInfo);
+router.post('/api/customers', checkAuth, checkRole('Restaurant', 'Admin'), storeCustomerInfo);
 
 /**
  * @openapi
@@ -590,7 +590,7 @@ router.post('/customers', checkAuth, checkRole('Restaurant', 'Admin'), storeCust
  *       200:
  *         description: Customer info updated
  */
-router.put('/customers/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateCustomerInfo);
+router.put('/api/customers/:id', checkAuth, checkRole('Restaurant', 'Admin'), updateCustomerInfo);
 
 /**
  * @openapi
@@ -613,7 +613,7 @@ router.put('/customers/:id', checkAuth, checkRole('Restaurant', 'Admin'), update
  *       204:
  *         description: Customer info deleted
  */
-router.delete('/customers/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteCustomerInfo);
+router.delete('/api/customers/:id', checkAuth, checkRole('Restaurant', 'Admin'), deleteCustomerInfo);
 
 /**
  * @openapi
@@ -636,7 +636,7 @@ router.delete('/customers/:id', checkAuth, checkRole('Restaurant', 'Admin'), del
  *       201:
  *         description: Location added to favorites
  */
-router.post('/favorites/locations/:locationId', checkAuth, checkRole('Customer'), addLocationToFavorites);
+router.post('/api/favorites/locations/:locationId', checkAuth, checkRole('Customer'), addLocationToFavorites);
 
 /**
  * @openapi
@@ -659,7 +659,7 @@ router.post('/favorites/locations/:locationId', checkAuth, checkRole('Customer')
  *       204:
  *         description: Location removed from favorites
  */
-router.delete('/favorites/locations/:locationId', checkAuth, checkRole('Customer'), removeLocationFromFavorites);
+router.delete('/api/favorites/locations/:locationId', checkAuth, checkRole('Customer'), removeLocationFromFavorites);
 
 /**
  * @openapi
@@ -675,7 +675,7 @@ router.delete('/favorites/locations/:locationId', checkAuth, checkRole('Customer
  *       200:
  *         description: List of favorite locations
  */
-router.get('/favorites/locations', checkAuth, checkRole('Customer'), getFavoriteLocations);
+router.get('/api/favorites/locations', checkAuth, checkRole('Customer'), getFavoriteLocations);
 
 /* ======================
    ANALYTICS ROUTES
@@ -708,7 +708,7 @@ router.get('/favorites/locations', checkAuth, checkRole('Customer'), getFavorite
  *       200:
  *         description: Returns coupon redemptions in the specified date range
  */
-router.get('/analytics/redemptions/date-range', checkAuth, checkRole('Restaurant', 'Admin'), getRedemptionsByDate);
+router.get('/api/analytics/redemptions/date-range', checkAuth, checkRole('Restaurant', 'Admin'), getRedemptionsByDate);
 
 /**
  * @openapi
@@ -724,7 +724,7 @@ router.get('/analytics/redemptions/date-range', checkAuth, checkRole('Restaurant
  *       200:
  *         description: Summary of coupon usage
  */
-router.get('/analytics/redemptions/summary', checkAuth, checkRole('Restaurant', 'Admin'), getCouponUsageSummary);
+router.get('/api/analytics/redemptions/summary', checkAuth, checkRole('Restaurant', 'Admin'), getCouponUsageSummary);
 
 /**
  * @openapi
@@ -747,7 +747,7 @@ router.get('/analytics/redemptions/summary', checkAuth, checkRole('Restaurant', 
  *       200:
  *         description: Redemptions for the specified user
  */
-router.get('/analytics/redemptions/user/:userId', checkAuth, checkRole('Restaurant', 'Admin'), getRedemptionsByUser);
+router.get('/api/analytics/redemptions/user/:userId', checkAuth, checkRole('Restaurant', 'Admin'), getRedemptionsByUser);
 
 /**
  * @openapi
@@ -763,7 +763,7 @@ router.get('/analytics/redemptions/user/:userId', checkAuth, checkRole('Restaura
  *       200:
  *         description: List of top customers
  */
-router.get('/analytics/customers/top', checkAuth, checkRole('Restaurant', 'Admin'), getTopCustomers);
+router.get('/api/analytics/customers/top', checkAuth, checkRole('Restaurant', 'Admin'), getTopCustomers);
 
 /**
  * @openapi
@@ -779,7 +779,7 @@ router.get('/analytics/customers/top', checkAuth, checkRole('Restaurant', 'Admin
  *       200:
  *         description: Coupons in descending order of redemption count
  */
-router.get('/analytics/coupons/top-redeemed', checkAuth, checkRole('Restaurant', 'Admin'), getTopRedeemedCoupons);
+router.get('/api/analytics/coupons/top-redeemed', checkAuth, checkRole('Restaurant', 'Admin'), getTopRedeemedCoupons);
 
 /**
  * @openapi
@@ -801,7 +801,7 @@ router.get('/analytics/coupons/top-redeemed', checkAuth, checkRole('Restaurant',
  *       200:
  *         description: Coupon usage stats
  */
-router.get('/analytics/locations/usage', checkAuth, checkRole('Restaurant', 'Admin'), getCouponUsageByLocation);
+router.get('/api/analytics/locations/usage', checkAuth, checkRole('Restaurant', 'Admin'), getCouponUsageByLocation);
 
 /**
  * @openapi
@@ -830,7 +830,7 @@ router.get('/analytics/locations/usage', checkAuth, checkRole('Restaurant', 'Adm
  *       200:
  *         description: Daily redemptions in the given date range
  */
-router.get('/analytics/redemptions/daily', checkAuth, checkRole('Restaurant', 'Admin'), getDailyRedemptions);
+router.get('/api/analytics/redemptions/daily', checkAuth, checkRole('Restaurant', 'Admin'), getDailyRedemptions);
 
 /**
  * @openapi
@@ -846,6 +846,6 @@ router.get('/analytics/redemptions/daily', checkAuth, checkRole('Restaurant', 'A
  *       200:
  *         description: Redemption counts by coupon type
  */
-router.get('/analytics/coupons/types', checkAuth, checkRole('Restaurant', 'Admin'), getRedemptionsByCouponType);
+router.get('/api/analytics/coupons/types', checkAuth, checkRole('Restaurant', 'Admin'), getRedemptionsByCouponType);
 
 module.exports = router;
