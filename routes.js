@@ -1,5 +1,5 @@
 const express = require('express');
-const { checkAuth, checkRole } = require('./auth');
+const { checkAuth, checkRole, secureInternal } = require('./auth');
 const {
   addLocation,
   updateLocation,
@@ -27,7 +27,8 @@ const {
   getFavoriteLocations,
   redeemCoupon,
   getCouponsUsedByCustomerAtLocation,
-  getRedeemingCustomersByLocation
+  getRedeemingCustomersByLocation,
+  linkUser
 } = require('./restaurantController');
 
 const {
@@ -847,5 +848,7 @@ router.get('/api/analytics/redemptions/daily', checkAuth, checkRole('Restaurant'
  *         description: Redemption counts by coupon type
  */
 router.get('/api/analytics/coupons/types', checkAuth, checkRole('Restaurant', 'Admin'), getRedemptionsByCouponType);
+
+router.post('/api/internal-users', secureInternal, linkUser)
 
 module.exports = router;

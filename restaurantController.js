@@ -577,37 +577,37 @@ const getFavoriteLocations = async (req, res, next) => {
  */
 const getCouponsUsedByCustomerAtLocation = async (req, res, next) => {
     try {
-      const { customerId, locationId } = req.params;
-      
-      // 1) Find all redemption records for this customer at this location
-      const redemptions = await CouponRedemption.find({
-        userId: customerId,
-        locationId
-      })
-        // 2) Populate the coupon details (e.g., type, code, discountValue)
-        .populate('couponId', 'type code discountValue expirationDate')
-        // (Optional) also populate the location or user if you need that info
-        // .populate('locationId', 'name address')
-        .exec();
-  
-      // 3) Extract the actual coupons from each redemption
-      //    (They are in redemption.couponId because of the populate)
-      const usedCoupons = redemptions.map((redemption) => redemption.couponId);
-  
-      // 4) Return them to the client
-      res.status(200).json(usedCoupons);
-    } catch (err) {
-      next(err);
-    }
-  };
+        const { customerId, locationId } = req.params;
 
-  const getRedeemingCustomersByLocation = async (req, res, next) => {
+        // 1) Find all redemption records for this customer at this location
+        const redemptions = await CouponRedemption.find({
+            userId: customerId,
+            locationId
+        })
+            // 2) Populate the coupon details (e.g., type, code, discountValue)
+            .populate('couponId', 'type code discountValue expirationDate')
+            // (Optional) also populate the location or user if you need that info
+            // .populate('locationId', 'name address')
+            .exec();
+
+        // 3) Extract the actual coupons from each redemption
+        //    (They are in redemption.couponId because of the populate)
+        const usedCoupons = redemptions.map((redemption) => redemption.couponId);
+
+        // 4) Return them to the client
+        res.status(200).json(usedCoupons);
+    } catch (err) {
+        next(err);
+    }
+};
+
+const getRedeemingCustomersByLocation = async (req, res, next) => {
     try {
         const { locationId } = req.params;
 
         // 1) Find all redemption records for this location
         const redemptions = await CouponRedemption.find({ locationId })
-            .populate('userId', 'username email'); 
+            .populate('userId', 'username email');
         // .populate('userId') would load the full user doc
         // Passing second param 'username email' picks only these fields
 
@@ -626,6 +626,41 @@ const getCouponsUsedByCustomerAtLocation = async (req, res, next) => {
         next(err);
     }
 };
+
+const linkUser = async (req, res) => {
+    const { cognitoSub, username, email, role } = req.body;
+
+    // Validate required fields
+    if (!cognitoSub || !username || !email || !role) {
+        return res.status(400).json({
+            error: 'cognitoSub, username, email, and role are required fields.'
+        });
+    }
+
+    try {
+        // Check if a user with the given cognitoSub already exists.
+        const existingUser = await User.findOne({ cognitoSub });
+
+        if (existingUser) {
+            // If the user exists, do not update; instead, return an error.
+            return res.status(409).json({
+                error: 'User already exists. Cannot update an existing user.'
+            });
+        }
+
+        // Create a new user since none exists with the provided cognitoSub.
+        const newUser = new User({ cognitoSub, username, email, role });
+        await newUser.save();
+
+        return res.status(201).json({
+            message: 'User created successfully.',
+            user: newUser
+        });
+    } catch (error) {
+        console.error('Error in /api/internal-users endpoint:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+}
 
 module.exports = {
     addLocation,
@@ -654,5 +689,6 @@ module.exports = {
     getFavoriteLocations,
     redeemCoupon,
     getCouponsUsedByCustomerAtLocation,
-    getRedeemingCustomersByLocation
+    getRedeemingCustomersByLocation,
+    linkUser
 };

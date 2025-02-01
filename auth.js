@@ -31,4 +31,13 @@ const checkRole = (...allowedRoles) => (req, res, next) => {
     next();
 };
 
-module.exports = { checkAuth, checkRole };
+// This middleware checks for a valid API key in the x-api-key header.
+const secureInternal = (req, res, next) => {
+    const token = req.headers['x-api-key'];
+    if (!token || token !== process.env.INTERNAL_API_SECRET) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    next();
+  };
+
+module.exports = { checkAuth, checkRole, secureInternal };
