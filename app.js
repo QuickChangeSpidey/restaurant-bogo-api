@@ -38,6 +38,10 @@ app.use(
 // Define routes
 app.use("/api", require("./routes"));
 
+app.get('/api/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 // QR code generation
 app.post('/api/locations/:id/generate-qr', checkAuth, checkRole('Restaurant'), async (req, res) => {
   try {
