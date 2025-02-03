@@ -36,7 +36,7 @@ app.use(
 })();
 
 // Define routes
-app.use("/api", require("./routes"));
+app.use("/", require("./routes"));
 
 app.get('/api/health', (req, res) => {
   res.status(200).send('OK');
