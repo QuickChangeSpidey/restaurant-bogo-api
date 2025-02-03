@@ -24,16 +24,13 @@ app.use(
   swaggerUi.setup(swaggerSpec)
 );
 
-// Connect to MongoDB
-(async () => {
-  try {
-    const dbClient = await connectDB();
-    app.locals.db = dbClient.db("bogo-ninja-restaurant-db"); // Attach the database instance to app.locals
-  } catch (err) {
-    console.error("Failed to connect to MongoDB. Exiting...");
-    process.exit(1);
-  }
-})();
+// ✅ Connect to MongoDB only ONCE
+connectDB().then(() => {
+  console.log("🚀 Database connection established.");
+}).catch(err => {
+  console.error("❌ Failed to connect to MongoDB. Exiting...");
+  process.exit(1);
+});
 
 // Define routes
 app.use("/", require("./routes"));

@@ -1,23 +1,17 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const mongoose = require('mongoose');
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-const client = new MongoClient(process.env.MONGO_URI, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
+const connectDB = async () => {
+    try {
+        const conn = await mongoose.connect(process.env.MONGO_URI, {
+            serverSelectionTimeoutMS: 30000, // Increase timeout for better debugging
+            socketTimeoutMS: 45000
+        });
 
-async function connectDB() {
-  try {
-    await client.connect();
-    console.log("Connected to MongoDB Atlas successfully.");
-    return client; // Return the connected client for other modules to use
-  } catch (err) {
-    console.error("Error connecting to MongoDB:", err.message);
-    process.exit(1); // Exit the app if unable to connect
-  }
-}
+        console.log(`✅ MongoDB Connected Successfully: ${conn.connection.host}`);
+    } catch (error) {
+        console.error("❌ MongoDB Connection Error:", error);
+        process.exit(1); // Only exit if truly failing
+    }
+};
 
 module.exports = connectDB;
