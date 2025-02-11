@@ -18,6 +18,7 @@ const {
   sendNotifications,
   updateRestaurantDetails,
   storeCustomerInfo,
+  generateQR,
   updateCustomerInfo,
   deleteCustomerInfo,
   getCouponsByLocationId,
@@ -850,5 +851,21 @@ router.get('/api/analytics/redemptions/daily', checkAuth, checkRole('Restaurant'
 router.get('/api/analytics/coupons/types', checkAuth, checkRole('Restaurant', 'Admin'), getRedemptionsByCouponType);
 
 router.post('/api/internal-users', secureInternal, linkUser)
+
+/**
+ * @openapi
+ * /locations/:id/generate-qr:
+ *   post:
+ *     tags:
+ *       - QR generation
+ *     summary: Post call to generate coupon code.
+ *     description: Requires Restaurant or Admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Redemption counts by coupon type
+ */
+router.post('/api/locations/:id/generate-qr', checkAuth, checkRole('Restaurant','Admin'), generateQR);
 
 module.exports = router;

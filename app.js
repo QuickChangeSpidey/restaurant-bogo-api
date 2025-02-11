@@ -2,11 +2,9 @@ const express = require("express");
 require('dotenv').config();
 const bodyParser = require("body-parser");
 const cors = require('cors');
-const QRCode = require('qrcode');
-const { checkAuth, checkRole } = require('./auth');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
-const { client } = require('./db');
+const mongoose = require('mongoose');
 
 const app = express();
 
@@ -14,6 +12,22 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
+
+// 1) Connect to MongoDB before routes
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log('Mongoose connected successfully');
+
+    // 2) Start the server after successful connection
+    app.listen(process.env.PORT, () => {
+      console.log('Server is running on port 5000');
+      console.log('Swagger docs at http://localhost:5000/api-docs (Admin Only)');
+    });
+  })
+  .catch(error => {
+    console.error('Error connecting to MongoDB', error);
+    process.exit(1);
+  });
 
 // Protected Swagger route
 app.use(
@@ -29,39 +43,9 @@ app.get('/api/health', (req, res) => {
   res.status(200).send('OK');
 });
 
-// QR code generation
-app.post('/api/locations/:id/generate-qr', checkAuth, checkRole('Restaurant'), async (req, res) => {
-  try {
-    const { id } = req.params;
-
-
-    if (!location) {
-      return res.status(404).json({ error: 'Location not found' });
-    }
-
-    // Generate QR code with location details
-    const qrCodeText = `${id}`;
-    const qrCode = await QRCode.toDataURL(qrCodeText);
-
-    // Update the location with the generated QR code
-    location.qrCode = qrCode;
-    await location.save();
-
-    res.status(200).json({ message: 'QR code generated successfully', qrCode });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to generate QR code', details: err.message });
-  }
-});
-
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send("Something went wrong!");
 });
 
-// Start the server
-const PORT = process.env.PORT;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log('Swagger docs at http://localhost:5000/api-docs (Admin Only)');
-});
