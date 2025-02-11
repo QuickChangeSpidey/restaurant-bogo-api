@@ -18,8 +18,6 @@ app.use(cors());
 // Protected Swagger route
 app.use(
   '/api-docs',
-  checkAuth,
-  checkRole('Admin'),
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec)
 );
