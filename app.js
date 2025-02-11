@@ -1,12 +1,12 @@
 const express = require("express");
 require('dotenv').config();
 const bodyParser = require("body-parser");
-const connectDB = require("./db");
 const cors = require('cors');
 const QRCode = require('qrcode');
 const { checkAuth, checkRole } = require('./auth');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
+const { client } = require('./db');
 
 const app = express();
 
@@ -23,14 +23,6 @@ app.use(
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec)
 );
-
-// ✅ Connect to MongoDB only ONCE
-connectDB().then(() => {
-  console.log("🚀 Database connection established.");
-}).catch(err => {
-  console.error("❌ Failed to connect to MongoDB. Exiting...");
-  process.exit(1);
-});
 
 // Define routes
 app.use("/", require("./routes"));
