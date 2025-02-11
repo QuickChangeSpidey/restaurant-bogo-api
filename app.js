@@ -53,8 +53,6 @@ app.post('/api/locations/:id/generate-qr', checkAuth, checkRole('Restaurant'), a
   }
 });
 
-
-
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
