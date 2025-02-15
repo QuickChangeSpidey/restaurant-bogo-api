@@ -607,17 +607,110 @@ const generateQR = async (req, res, next) => {
   }
 };
 
+// 30) Get a specific coupon for a location
+const getCouponAtLocation = async (req, res, next) => {
+  try {
+    const { locationId, couponId } = req.params;
+
+    // Optionally verify that the location exists
+    const location = await Location.findById(locationId);
+    if (!location) {
+      return res.status(404).json({ error: 'Location not found' });
+    }
+
+    // Find the coupon with the given couponId that belongs to the location
+    const coupon = await Coupon.findOne({ _id: couponId, locationId });
+    if (!coupon) {
+      return res.status(404).json({ error: 'Coupon not found for this location' });
+    }
+
+    return res.status(200).json(coupon);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 30) Get all locations for the authenticated restaurant
+const getLocationsByRestaurant = async (req, res, next) => {
+  try {
+    // Assumes the authenticated user is a Restaurant
+    const locations = await Location.find({ restaurantId: req.user.id });
+    return res.status(200).json(locations);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 31) Get a specific location by ID
+const getLocation = async (req, res, next) => {
+  try {
+    const location = await Location.findById(req.params.id);
+    if (!location) {
+      return res.status(404).json({ error: 'Location not found' });
+    }
+    return res.status(200).json(location);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 32) Get all menu items for a location
+const getMenuItemsByLocation = async (req, res, next) => {
+  try {
+    const { locationId } = req.params;
+
+    // Optionally verify that the location exists before proceeding.
+    // const location = await Location.findById(locationId);
+    // if (!location) {
+    //   return res.status(404).json({ error: 'Location not found' });
+    // }
+
+    // Find all menu items belonging to the given location
+    const menuItems = await MenuItem.find({ locationId });
+    return res.status(200).json(menuItems);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 33) Get a specific menu item for a location
+const getMenuItemByLocation = async (req, res, next) => {
+  try {
+    const { locationId, menuItemId } = req.params;
+
+    // Optionally verify that the location exists.
+    // const location = await Location.findById(locationId);
+    // if (!location) {
+    //   return res.status(404).json({ error: 'Location not found' });
+    // }
+
+    // Find the menu item that matches both the menuItemId and locationId
+    const menuItem = await MenuItem.findOne({ _id: menuItemId, locationId });
+    if (!menuItem) {
+      return res.status(404).json({ error: 'Menu item not found for this location' });
+    }
+    return res.status(200).json(menuItem);
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 // Export all 29 methods
 module.exports = {
   // Location
   addLocation,
   updateLocation,
   deleteLocation,
+  getLocationsByRestaurant,
+  getLocation,
 
   // Menu
   addMenuItem,
   updateMenuItem,
   deleteMenuItem,
+  getMenuItemByLocation,
+  getMenuItemsByLocation,
 
   // Coupon
   generateCoupon,
@@ -626,6 +719,9 @@ module.exports = {
   deactivateCoupon,
   deleteCoupon,
   redeemCoupon,
+  getCouponsByLocationId,
+  getLocationsWithCoupons,
+  getCouponAtLocation,
 
   // Ads
   addAd,
@@ -642,10 +738,6 @@ module.exports = {
   storeCustomerInfo,
   updateCustomerInfo,
   deleteCustomerInfo,
-
-  // Coupon queries
-  getCouponsByLocationId,
-  getLocationsWithCoupons,
 
   // Favorites
   addLocationToFavorites,

@@ -4,14 +4,21 @@ const {
   addLocation,
   updateLocation,
   deleteLocation,
+  getLocation,
+  getLocationsByRestaurant,
   addMenuItem,
   updateMenuItem,
   deleteMenuItem,
+  getMenuItemByLocation,
+  getMenuItemsByLocation,
   generateCoupon,
   updateCoupon,
   deleteCoupon,
   activateCoupon,
   deactivateCoupon,
+  getCouponsByLocationId,
+  getCouponAtLocation,
+  getLocationsWithCoupons,
   addAd,
   updateAd,
   deleteAd,
@@ -21,8 +28,6 @@ const {
   generateQR,
   updateCustomerInfo,
   deleteCustomerInfo,
-  getCouponsByLocationId,
-  getLocationsWithCoupons,
   addLocationToFavorites,
   removeLocationFromFavorites,
   getFavoriteLocations,
@@ -44,6 +49,141 @@ const {
 } = require('./analyticsController.js');
 
 const router = express.Router();
+
+/**
+ * @openapi
+ * /api/locations/{locationId}/menu-items:
+ *   get:
+ *     tags:
+ *       - Menu Items
+ *     summary: Get all menu items for a location
+ *     description: Retrieves all menu items associated with the specified location.
+ *     parameters:
+ *       - name: locationId
+ *         in: path
+ *         required: true
+ *         description: The ID of the location.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of menu items
+ *       404:
+ *         description: Location or menu items not found
+ */
+router.get(
+  '/api/locations/:locationId/menu-items',
+  checkAuth,
+  getMenuItemsByLocation
+);
+
+/**
+ * @openapi
+ * /api/locations/{locationId}/menu-items/{menuItemId}:
+ *   get:
+ *     tags:
+ *       - Menu Items
+ *     summary: Get a specific menu item for a location
+ *     description: Retrieves a specific menu item by its ID for the given location.
+ *     parameters:
+ *       - name: locationId
+ *         in: path
+ *         required: true
+ *         description: The ID of the location.
+ *         schema:
+ *           type: string
+ *       - name: menuItemId
+ *         in: path
+ *         required: true
+ *         description: The ID of the menu item.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Menu item details retrieved successfully
+ *       404:
+ *         description: Menu item not found for this location
+ */
+router.get(
+  '/api/locations/:locationId/menu-items/:menuItemId',
+  checkAuth,
+  getMenuItemByLocation
+);
+
+
+/**
+ * @openapi
+ * /api/restaurant/locations:
+ *   get:
+ *     tags:
+ *       - Locations
+ *     summary: Get all locations for the restaurant
+ *     description: Retrieves all locations belonging to the authenticated restaurant.
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of locations
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/api/restaurant/locations', checkAuth, checkRole('Restaurant', 'Admin'), getLocationsByRestaurant);
+
+/**
+ * @openapi
+ * /api/locations/{id}:
+ *   get:
+ *     tags:
+ *       - Locations
+ *     summary: Get a specific location by ID
+ *     description: Retrieves a specific location by its ID.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Location ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Location details retrieved successfully
+ *       404:
+ *         description: Location not found
+ */
+router.get('/api/locations/:id', checkAuth, checkRole('Restaurant', 'Admin'), getLocation);
+
+
+/**
+ * @openapi
+ * /locations/{locationId}/coupons/{couponId}:
+ *   get:
+ *     tags:
+ *       - Coupons
+ *     summary: Get a specific coupon at a location
+ *     description: Retrieve a coupon by its ID for the specified location.
+ *     parameters:
+ *       - name: locationId
+ *         in: path
+ *         required: true
+ *         description: The ID of the location.
+ *         schema:
+ *           type: string
+ *       - name: couponId
+ *         in: path
+ *         required: true
+ *         description: The ID of the coupon.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Coupon retrieved successfully
+ *       404:
+ *         description: Location or coupon not found
+ */
+router.get('/api/locations/:locationId/coupons/:couponId', getCouponAtLocation);
+
 
 /**
  * @openapi
