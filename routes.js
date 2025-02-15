@@ -217,7 +217,7 @@ router.get('/api/locations/:locationId/coupons/:couponId', getCouponAtLocation);
  *       403:
  *         description: Forbidden
  */
-router.post('/api/locations', checkAuth, checkRole('Restaurant','Admin'), addLocation);
+router.post('/api/locations', checkAuth, checkRole('Restaurant', 'Admin'), addLocation);
 
 /**
  * @openapi
@@ -543,7 +543,7 @@ router.get('/api/coupons/:locationId', getCouponsByLocationId);
  *       200:
  *         description: Coupon redeemed successfully
  */
-router.post('/api/coupons/redeem', checkAuth, checkRole('Customer','Restaurant','Admin'), redeemCoupon);
+router.post('/api/coupons/redeem', checkAuth, checkRole('Customer', 'Restaurant', 'Admin'), redeemCoupon);
 
 /**
  * @openapi
@@ -1006,6 +1006,6 @@ router.post('/api/internal-users', secureInternal, linkUser)
  *       200:
  *         description: Redemption counts by coupon type
  */
-router.post('/api/locations/:id/generate-qr', checkAuth, checkRole('Restaurant','Admin'), generateQR);
+router.post('/api/locations/:id/generate-qr', checkAuth, checkRole('Restaurant', 'Admin'), generateQR);
 
 module.exports = router;
