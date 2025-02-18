@@ -633,7 +633,6 @@ const getCouponAtLocation = async (req, res, next) => {
 // 30) Get all locations for the authenticated restaurant
 const getLocationsByRestaurant = async (req, res, next) => {
   try {
-    console.log(req.user);
     // Assumes the authenticated user is a Restaurant
     const locations = await Location.find({ restaurantId: req.user.sub });
     return res.status(200).json(locations);

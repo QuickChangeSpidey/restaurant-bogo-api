@@ -34,7 +34,6 @@ const checkAuth = (req, res, next) => {
     if (err) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
-    console.log('Decoded token:', decoded);
     req.user = decoded;
     next();
   });
@@ -50,7 +49,6 @@ const checkRole = (...allowedRoles) => (req, res, next) => {
   const userGroups = req.user["cognito:groups"] || [];
   const hasAllowedRole = allowedRoles.some(role => userGroups.includes(role));
   if (!hasAllowedRole) {
-    console.log('User groups:', userGroups);
     return res.status(403).json({ error: 'Forbidden: Insufficient privileges' });
   }
   next();
