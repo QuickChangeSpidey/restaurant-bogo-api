@@ -13,7 +13,7 @@ const addLocation = async (req, res, next) => {
   try {
     const location = new Location({
       ...req.body,
-      restaurantId: req.user.id,
+      restaurantId: req.user.sub,
     });
     const savedLocation = await location.save();
     return res.status(201).json(savedLocation);
@@ -216,7 +216,7 @@ const redeemCoupon = async (req, res, next) => {
     // 3. Check per-user usage limit
     const redemptionCount = await CouponRedemption.countDocuments({
       couponId: coupon._id,
-      userId: req.user.id,
+      userId: req.user.sub,
     });
     if (redemptionCount >= (coupon.maxUsagePerUser || 1)) {
       // Revert the decrement
@@ -227,7 +227,7 @@ const redeemCoupon = async (req, res, next) => {
     // 4. Log the redemption
     const redemption = new CouponRedemption({
       couponId: coupon._id,
-      userId: req.user.id,
+      userId: req.user.sub,
       locationId: location._id,
       redeemedAt: new Date(),
     });
@@ -294,7 +294,7 @@ const sendNotifications = async (req, res, next) => {
     // Typically you'd verify these customers belong to the same restaurant, etc.
     const notifications = req.body.customers.map((customerId) =>
       new Notification({
-        restaurantId: req.user.id,
+        restaurantId: req.user.sub,
         customerId,
         type: req.body.type,
         message: req.body.message,
@@ -311,7 +311,7 @@ const sendNotifications = async (req, res, next) => {
 const updateRestaurantDetails = async (req, res, next) => {
   try {
     const restaurant = await User.findByIdAndUpdate(
-      req.user.id,
+      req.user.sub,
       { $set: req.body },
       { new: true }
     );
@@ -434,7 +434,7 @@ const getLocationsWithCoupons = async (req, res, next) => {
 // 23) Add location to Customer favorites
 const addLocationToFavorites = async (req, res, next) => {
   try {
-    const customer = await User.findById(req.user.id);
+    const customer = await User.findById(req.user.sub);
     if (!customer) {
       return res.status(404).json({ error: 'Customer not found' });
     }
@@ -467,7 +467,7 @@ const addLocationToFavorites = async (req, res, next) => {
 // 24) Remove location from Customer favorites
 const removeLocationFromFavorites = async (req, res, next) => {
   try {
-    const customer = await User.findById(req.user.id);
+    const customer = await User.findById(req.user.sub);
     if (!customer) {
       return res.status(404).json({ error: 'Customer not found' });
     }
@@ -493,7 +493,7 @@ const removeLocationFromFavorites = async (req, res, next) => {
 // 25) Get favorite locations for a Customer
 const getFavoriteLocations = async (req, res, next) => {
   try {
-    const customer = await User.findById(req.user.id)
+    const customer = await User.findById(req.user.sub)
       .populate('favoritesLocations')
       .exec();
 
