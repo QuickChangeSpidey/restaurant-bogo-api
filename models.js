@@ -32,7 +32,7 @@ const User = mongoose.model('User', UserSchema);
  * Links to a User with role = Restaurant via `restaurantId`.
  */
 const LocationSchema = new mongoose.Schema({
-    restaurantId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    restaurantId: { type: String, ref: 'User', required: true },
     name: { type: String, required: true },
     logo: { type: String },
     address: { type: String, required: true },
