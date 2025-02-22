@@ -144,6 +144,8 @@ const CouponSchema = new mongoose.Schema(
     quantity: { type: Number, default: 0 },        // total redemptions available
     maxUsagePerUser: { type: Number, default: 1 }, // how many times a single user can redeem
 
+    image: { type: String }, // Optional image URL
+
     // Timestamps
   },
   { timestamps: true }

@@ -104,7 +104,6 @@ const generateCoupon = async (req, res, next) => {
       locationId,
       code,
       expirationDate,
-      // All other potential fields:
       discountPercentage,
       discountValue,
       purchasedItemIds,
@@ -118,6 +117,7 @@ const generateCoupon = async (req, res, next) => {
       portionSize,
       startTime,
       endTime,
+      image,
       quantity,
       maxUsagePerUser
     } = req.body;
@@ -474,7 +474,6 @@ const getCouponsByLocationId = async (req, res, next) => {
   try {
     const coupons = await Coupon.find({
       locationId: req.params.locationId,
-      isActive: true,
     });
     return res.status(200).json(coupons);
   } catch (err) {
