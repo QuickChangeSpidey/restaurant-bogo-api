@@ -73,7 +73,7 @@ const MenuItem = mongoose.model('MenuItem', MenuItemSchema);
  */
 // models/Coupon.js
 
-const Coupon = new mongoose.Schema(
+const CouponSchema = new mongoose.Schema(
   {
     locationId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -149,7 +149,7 @@ const Coupon = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Coupon', Coupon);
+const Coupon = mongoose.model('Coupon', CouponSchema);
 
 /**
  * COUPON REDEMPTION SCHEMA
