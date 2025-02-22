@@ -71,44 +71,85 @@ const MenuItem = mongoose.model('MenuItem', MenuItemSchema);
  * 1) Added `quantity` field for total coupon availability.
  * 2) Added `maxUsagePerUser` if you want to limit usage per user.
  */
-const CouponSchema = new mongoose.Schema({
-    locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
-    type: {
-        type: String,
-        enum: [
-            'BOGO',
-            'FreeItem',
-            'Discount',
-            'SpendMoreSaveMore',
-            'FlatDiscount',
-            'ComboDeal',
-            'FamilyPack',
-            'LimitedTime',
-            'HappyHour'
-        ],
-        required: true,
+// models/Coupon.js
+
+const Coupon = new mongoose.Schema(
+  {
+    locationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Location',
+      required: true
     },
-    code: { type: String, unique: true, required: true },
-    discountValue: { type: Number },
-    freeItemId: { type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' },
+    type: {
+      type: String,
+      enum: [
+        'BOGO',                  // 1. Buy 1 Get 1
+        'Buy1Get1FreeItem',      // 2. Buy 1 Get 1 Free (Specific Item)
+        'StorewideFlatDiscount', // 3. Storewide Flat Discount
+        'DiscountOnSpecificItems',//4. Discount on Specific Items
+        'SpendMoreSaveMore',     // 5. Spend More Save More
+        'FreeItemWithPurchase',  // 6. Free Item with Purchase
+        'HappyHour',             // 7. Happy Hour Menu
+        'ComboDeal',             // 8. Combo Deals
+        'FamilyPack',            // 9. Family Packs
+        'LimitedTime'            // 10. Limited Time Offer
+      ],
+      required: true
+    },
+    code: {
+      type: String,
+      unique: true,
+      required: true
+    },
+    // Example discount fields:
+    discountPercentage: {
+      type: Number, // e.g. for "StorewideFlatDiscount", "DiscountOnSpecificItems", "HappyHour"
+      default: 0
+    },
+    discountValue: {
+      type: Number, // e.g. a flat $ off or $ cap
+      default: 0
+    },
+
+    // For combos, BOGO, or specific items:
+    purchasedItemIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }], 
+    freeItemIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
+
+    // For "Spend More Save More" or "Free Item with Purchase":
+    minimumSpend: { type: Number, default: 0 },
+    // For "Spend More Save More", you may store tiers:
+    spendThresholds: [
+      {
+        threshold: Number,    // e.g. $50
+        discountValue: Number // e.g. $5 discount or 10% discount
+      }
+    ],
+
+    // For "Happy Hour"
+    startHour: { type: Number }, // e.g. 14 = 2 PM
+    endHour: { type: Number },   // e.g. 17 = 5 PM
+
+    // For "ComboDeal", "FamilyPack"
     comboItems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
-    minimumSpend: { type: Number },
-    maxRedeemValue: { type: Number },
-    portionSize: { type: String },
+    comboPrice: { type: Number, default: 0 },
+    portionSize: { type: String }, // e.g. "serves 4 people"
+
+    // Duration of the deal
     startTime: { type: Date },
     endTime: { type: Date },
-    generationDate: { type: Date, default: Date.now },
     expirationDate: { type: Date, required: true },
+
+    // Basic usage or redemption constraints
     isActive: { type: Boolean, default: true },
+    quantity: { type: Number, default: 0 },        // total redemptions available
+    maxUsagePerUser: { type: Number, default: 1 }, // how many times a single user can redeem
 
-    // How many total redemptions are available for this coupon
-    quantity: { type: Number, default: 0 },
+    // Timestamps
+  },
+  { timestamps: true }
+);
 
-    // Limit how many times a single user can redeem this coupon
-    maxUsagePerUser: { type: Number, default: 1 }
-}, { timestamps: true });
-
-const Coupon = mongoose.model('Coupon', CouponSchema);
+module.exports = mongoose.model('Coupon', Coupon);
 
 /**
  * COUPON REDEMPTION SCHEMA

@@ -96,92 +96,190 @@ const deleteMenuItem = async (req, res, next) => {
   }
 };
 
-// 7) Generate coupon
+// CREATE a new coupon
 const generateCoupon = async (req, res, next) => {
   try {
-    const { type, locationId, ...fields } = req.body;
+    const {
+      type,
+      locationId,
+      code,
+      expirationDate,
+      // All other potential fields:
+      discountPercentage,
+      discountValue,
+      purchasedItemIds,
+      freeItemIds,
+      minimumSpend,
+      spendThresholds,
+      startHour,
+      endHour,
+      comboItems,
+      comboPrice,
+      portionSize,
+      startTime,
+      endTime,
+      quantity,
+      maxUsagePerUser
+    } = req.body;
 
-    // Validate the coupon type as needed...
-    // (BOGO, FreeItem, FlatDiscount, etc.)
+    // Basic required validations
+    if (!locationId) {
+      return res.status(400).json({ error: 'locationId is required' });
+    }
+    if (!type) {
+      return res.status(400).json({ error: 'type is required' });
+    }
+    if (!code) {
+      return res.status(400).json({ error: 'code is required' });
+    }
+    if (!expirationDate) {
+      return res.status(400).json({ error: 'expirationDate is required' });
+    }
 
-    const coupon = new Coupon({ type, locationId, ...fields });
-    const savedCoupon = await coupon.save();
+    // More specific validations
+    // E.g. if type is 'StorewideFlatDiscount' but discountPercentage is missing
+    if (type === 'StorewideFlatDiscount' && (discountPercentage == null || discountPercentage <= 0)) {
+      return res
+        .status(400)
+        .json({ error: 'discountPercentage must be > 0 for StorewideFlatDiscount' });
+    }
+
+    // ... you can add as many type-based validations as you need ...
+
+    // Create & save
+    const newCoupon = new Coupon({
+      type,
+      locationId,
+      code,
+      expirationDate,
+      discountPercentage,
+      discountValue,
+      purchasedItemIds,
+      freeItemIds,
+      minimumSpend,
+      spendThresholds,
+      startHour,
+      endHour,
+      comboItems,
+      comboPrice,
+      portionSize,
+      startTime,
+      endTime,
+      quantity,
+      maxUsagePerUser
+      // isActive defaults to true
+    });
+
+    const savedCoupon = await newCoupon.save();
     return res.status(201).json(savedCoupon);
   } catch (err) {
     next(err);
   }
 };
 
-// 8) Update coupon
+// UPDATE an existing coupon
 const updateCoupon = async (req, res, next) => {
   try {
-    const { type, ...fields } = req.body;
-    // Validate as needed...
+    const { id } = req.params;
+
+    // NOTE: This merges the request body into the $set object, so partial updates are allowed.
+    const updatedCoupon = await Coupon.findByIdAndUpdate(
+      id,
+      { $set: req.body },
+      { new: true }
+    );
+
+    if (!updatedCoupon) {
+      return res.status(404).json({ error: 'Coupon not found' });
+    }
+
+    return res.status(200).json(updatedCoupon);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// DELETE a coupon (permanently remove from DB)
+const deleteCoupon = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await Coupon.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Coupon not found or already deleted' });
+    }
+
+    return res.status(200).json({ message: 'Coupon successfully deleted' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ACTIVATE a coupon (set isActive = true)
+const activateCoupon = async (req, res, next) => {
+  try {
+    const { id } = req.params;
 
     const coupon = await Coupon.findByIdAndUpdate(
-      req.params.id,
-      { $set: { type, ...fields } },
+      id,
+      { $set: { isActive: true } },
       { new: true }
     );
     if (!coupon) {
       return res.status(404).json({ error: 'Coupon not found' });
     }
-    return res.status(200).json(coupon);
+
+    return res.status(200).json({ message: 'Coupon activated', coupon });
   } catch (err) {
     next(err);
   }
 };
 
-// 9) Activate coupon
-const activateCoupon = async (req, res, next) => {
-  try {
-    const coupon = await Coupon.findById(req.params.id);
-    if (!coupon) {
-      return res.status(404).json({ error: 'Coupon not found' });
-    }
-    if (coupon.isActive) {
-      return res.status(400).json({ error: 'Coupon is already active.' });
-    }
-    coupon.isActive = true;
-    await coupon.save();
-    return res.status(200).json({
-      message: 'Coupon activated successfully.',
-      coupon,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// 10) Deactivate coupon
+// DEACTIVATE a coupon (set isActive = false)
 const deactivateCoupon = async (req, res, next) => {
   try {
-    const coupon = await Coupon.findById(req.params.id);
+    const { id } = req.params;
+
+    const coupon = await Coupon.findByIdAndUpdate(
+      id,
+      { $set: { isActive: false } },
+      { new: true }
+    );
     if (!coupon) {
       return res.status(404).json({ error: 'Coupon not found' });
     }
-    if (!coupon.isActive) {
-      return res.status(400).json({ error: 'Coupon is already inactive.' });
-    }
-    coupon.isActive = false;
-    await coupon.save();
-    return res.status(200).json({
-      message: 'Coupon deactivated successfully.',
-      coupon,
-    });
+
+    return res.status(200).json({ message: 'Coupon deactivated', coupon });
   } catch (err) {
     next(err);
   }
 };
 
-// 11) Delete coupon
-const deleteCoupon = async (req, res, next) => {
+// GET all coupons (optionally filter by location or type)
+const getAllCoupons = async (req, res, next) => {
   try {
-    const coupon = await Coupon.findByIdAndDelete(req.params.id);
+    const { locationId, type, isActive } = req.query;
+    const filter = {};
+    if (locationId) filter.locationId = locationId;
+    if (type) filter.type = type;
+    if (typeof isActive !== 'undefined') filter.isActive = isActive === 'true';
+
+    const coupons = await Coupon.find(filter);
+    return res.status(200).json(coupons);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET single coupon by ID
+const getCouponById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const coupon = await Coupon.findById(id);
     if (!coupon) {
       return res.status(404).json({ error: 'Coupon not found' });
     }
-    return res.status(200).json({ message: 'Coupon deleted successfully.' });
+    return res.status(200).json(coupon);
   } catch (err) {
     next(err);
   }
@@ -722,6 +820,8 @@ module.exports = {
   getCouponsByLocationId,
   getLocationsWithCoupons,
   getCouponAtLocation,
+  getAllCoupons,
+  getCouponById,
 
   // Ads
   addAd,
