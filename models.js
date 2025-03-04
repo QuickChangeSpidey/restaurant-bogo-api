@@ -9,19 +9,19 @@ const mongoose = require('mongoose');
  *    (You can remove `password` entirely if you do not need it for any local auth.)
  */
 const UserSchema = new mongoose.Schema({
-    // The unique identifier from Cognito (sub claim).
-    // Allows you to link the Cognito user to this local User doc.
-    cognitoSub: { type: String, unique: true, sparse: true },
+  // The unique identifier from Cognito (sub claim).
+  // Allows you to link the Cognito user to this local User doc.
+  cognitoSub: { type: String, unique: true, sparse: true },
 
-    username: { type: String, required: true, unique: true },
-    email: { type: String, required: true, unique: true },
+  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
 
-    role: { type: String, enum: ['Admin', 'Restaurant', 'Customer'], required: true },
-    isActive: { type: Boolean, default: true },
-    details: { type: mongoose.Schema.Types.Mixed },
+  role: { type: String, enum: ['Admin', 'Restaurant', 'Customer'], required: true },
+  isActive: { type: Boolean, default: true },
+  details: { type: mongoose.Schema.Types.Mixed },
 
-    // For Customer users who favorite specific Locations
-    favoritesLocations: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Location' }],
+  // For Customer users who favorite specific Locations
+  favoritesLocations: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Location' }],
 }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
@@ -32,35 +32,102 @@ const User = mongoose.model('User', UserSchema);
  * Links to a User with role = Restaurant via `restaurantId`.
  */
 const LocationSchema = new mongoose.Schema({
-    restaurantId: { type: String, ref: 'User', required: true },
-    name: { type: String, required: true },
-    logo: { type: String },
-    address: { type: String, required: true },
-    hours: { type: String },
-    qrCode: { type: String },
-    geolocation: {
-        type: { type: String, default: 'Point', enum: ['Point'] },
-        coordinates: { type: [Number], required: true }, // [longitude, latitude]
-    },
-    menu: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
-    ads: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Ad' }],
-    coupons: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Coupon' }],
+  restaurantId: { type: String, ref: 'User', required: true },
+  name: { type: String, required: true },
+  logo: { type: String },
+  address: { type: String, required: true },
+  hours: { type: String },
+  qrCode: { type: String },
+  geolocation: {
+    type: { type: String, default: 'Point', enum: ['Point'] },
+    coordinates: { type: [Number], required: true }, // [longitude, latitude]
+  },
+  menu: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
+  ads: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Ad' }],
+  coupons: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Coupon' }],
+  genre: [{
+    type: String,
+    enum: [
+      'Italian', 'Chinese', 'Indian', 'American', 'Mexican', 'French', 'Japanese',
+      'Mediterranean', 'Vegetarian', 'Vegan', 'Fast Food', 'Seafood', 'Thai', 'Spanish',
+      'Korean', 'Greek', 'Turkish', 'Middle Eastern', 'Brazilian', 'Caribbean', 'African',
+      'Soul Food', 'Barbecue', 'Fusion', 'European', 'Cajun/Creole', 'Steakhouse', 'Diner',
+      'Pasta', 'Sushi', 'Burgers', 'Pizzeria', 'Ice Cream', 'Donuts', 'Dessert', 'Bakery',
+      'Food Truck', 'Farm-to-Table', 'Buffet', 'Brunch', 'Hot Pot', 'Dim Sum', 'Tapas', 'Bistro',
+      'Fondue', 'Raw Food', 'Juice Bar/Smoothies', 'Poke Bowl', 'Ramen', 'Café', 'Tea House',
+      'Wine Bar', 'Coffeehouse', 'Organic', 'Gluten-Free', 'Kosher', 'Halal', 'Low-Carb/Keto',
+      'Paleo', 'Health Food', 'Breakfast', 'Brasserie', 'Noodle Bar', 'Grill', 'Taproom',
+      'Pizza', 'Sweets', 'Asian Fusion', 'Modern European', 'Contemporary', 'Hawaiian',
+      'Latino', 'Poutine', 'Sandwiches', 'Wraps'
+    ]
+  }],
 }, { timestamps: true });
-LocationSchema.index({ geolocation: '2dsphere' }); // Enable geospatial queries
+
+LocationSchema.index({ geolocation: '2dsphere' });
+
+// Pre-remove hook to prevent deletion of Location if active coupons exist
+LocationSchema.pre('findByIdAndDelete', async function (next) {
+  try {
+    // Find all Coupons that are active and reference MenuItems of this Location
+    const activeCoupons = await this.model('Coupon').find({
+      locationId: this._id,
+      isActive: true, // Check if the coupon is active
+      $or: [
+        { purchasedItemIds: { $in: this.menu } },
+        { freeItemIds: { $in: this.menu } }
+      ]
+    });
+
+    // If any active coupon is found, prevent deletion of the Location
+    if (activeCoupons.length > 0) {
+      const error = new Error('Cannot remove Location because there are active Coupons using its MenuItems.');
+      return next(error);
+    }
+
+    // If no active coupons are found, allow deletion
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 const Location = mongoose.model('Location', LocationSchema);
+
 
 /**
  * MENU ITEM SCHEMA
  */
 const MenuItemSchema = new mongoose.Schema({
-    locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
-    name: { type: String, required: true },
-    description: { type: String },
-    price: { type: Number, required: true },
-    image: { type: String },
-    isAvailable: { type: Boolean, default: true }, // Tracks availability
+  locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
+  name: { type: String, required: true },
+  description: { type: String },
+  price: { type: Number, required: true },
+  image: { type: String },
+  isAvailable: { type: Boolean, default: true }, // Tracks availability
 }, { timestamps: true });
+
+MenuItemSchema.pre('findOneAndDelete', async function (next) {
+  try {
+    // Check if there are any Coupons that reference this MenuItem
+    const coupon = await this.model('Coupon').findOne({
+      $or: [
+        { purchasedItemIds: this._id },
+        { freeItemIds: this._id }
+      ]
+    });
+
+    // If a coupon is found, prevent deletion
+    if (coupon) {
+      const error = new Error('Cannot remove MenuItem because it is associated with a Coupon.');
+      return next(error);
+    }
+
+    // Cascade delete MenuItems when Location is removed
+    this.model('MenuItem').deleteMany({ locationId: this._id }, next);
+  } catch (err) {
+    next(err);
+  }
+});
 
 const MenuItem = mongoose.model('MenuItem', MenuItemSchema);
 
@@ -112,7 +179,7 @@ const CouponSchema = new mongoose.Schema(
     },
 
     // For combos, BOGO, or specific items:
-    purchasedItemIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }], 
+    purchasedItemIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
     freeItemIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
 
     // For "Spend More Save More" or "Free Item with Purchase":
@@ -151,6 +218,11 @@ const CouponSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+CouponSchema.pre('findByIdAndDelete', function (next) {
+  // Cascade delete Coupons when Location is removed
+  this.model('Coupon').deleteMany({ locationId: this._id }, next);
+});
+
 const Coupon = mongoose.model('Coupon', CouponSchema);
 
 /**
@@ -159,10 +231,10 @@ const Coupon = mongoose.model('Coupon', CouponSchema);
  * Tracks each redemption event for analytics / auditing.
  */
 const CouponRedemptionSchema = new mongoose.Schema({
-    couponId: { type: mongoose.Schema.Types.ObjectId, ref: 'Coupon', required: true },
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
-    redeemedAt: { type: Date, default: Date.now },
+  couponId: { type: mongoose.Schema.Types.ObjectId, ref: 'Coupon', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
+  redeemedAt: { type: Date, default: Date.now },
 });
 
 const CouponRedemption = mongoose.model('CouponRedemption', CouponRedemptionSchema);
@@ -171,11 +243,11 @@ const CouponRedemption = mongoose.model('CouponRedemption', CouponRedemptionSche
  * AD SCHEMA
  */
 const AdSchema = new mongoose.Schema({
-    locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
-    type: { type: String, enum: ['Video', 'Image'], required: true },
-    content: { type: String, required: true },
-    startDate: { type: Date, default: Date.now },
-    endDate: { type: Date },
+  locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
+  type: { type: String, enum: ['Video', 'Image'], required: true },
+  content: { type: String, required: true },
+  startDate: { type: Date, default: Date.now },
+  endDate: { type: Date },
 }, { timestamps: true });
 
 const Ad = mongoose.model('Ad', AdSchema);
@@ -184,12 +256,12 @@ const Ad = mongoose.model('Ad', AdSchema);
  * NOTIFICATION SCHEMA
  */
 const NotificationSchema = new mongoose.Schema({
-    restaurantId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
-    customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    type: { type: String, enum: ['Push', 'Email', 'SMS'], required: true },
-    message: { type: String, required: true },
-    status: { type: String, enum: ['Sent', 'Failed', 'Pending'], default: 'Pending' },
+  restaurantId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
+  customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  type: { type: String, enum: ['Push', 'Email', 'SMS'], required: true },
+  message: { type: String, required: true },
+  status: { type: String, enum: ['Sent', 'Failed', 'Pending'], default: 'Pending' },
 }, { timestamps: true });
 
 const Notification = mongoose.model('Notification', NotificationSchema);
@@ -199,11 +271,11 @@ const Notification = mongoose.model('Notification', NotificationSchema);
  * EXPORT ALL MODELS
  */
 module.exports = {
-    User,
-    Location,
-    MenuItem,
-    Coupon,
-    CouponRedemption,
-    Ad,
-    Notification,
+  User,
+  Location,
+  MenuItem,
+  Coupon,
+  CouponRedemption,
+  Ad,
+  Notification,
 };
