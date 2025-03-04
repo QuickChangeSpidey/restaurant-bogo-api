@@ -65,32 +65,6 @@ const LocationSchema = new mongoose.Schema({
 
 LocationSchema.index({ geolocation: '2dsphere' });
 
-// Pre-remove hook to prevent deletion of Location if active coupons exist
-LocationSchema.pre('findByIdAndDelete', async function (next) {
-  try {
-    // Find all Coupons that are active and reference MenuItems of this Location
-    const activeCoupons = await this.model('Coupon').find({
-      locationId: this._id,
-      isActive: true, // Check if the coupon is active
-      $or: [
-        { purchasedItemIds: { $in: this.menu } },
-        { freeItemIds: { $in: this.menu } }
-      ]
-    });
-
-    // If any active coupon is found, prevent deletion of the Location
-    if (activeCoupons.length > 0) {
-      const error = new Error('Cannot remove Location because there are active Coupons using its MenuItems.');
-      return next(error);
-    }
-
-    // If no active coupons are found, allow deletion
-    next();
-  } catch (err) {
-    next(err);
-  }
-});
-
 const Location = mongoose.model('Location', LocationSchema);
 
 
@@ -105,29 +79,6 @@ const MenuItemSchema = new mongoose.Schema({
   image: { type: String },
   isAvailable: { type: Boolean, default: true }, // Tracks availability
 }, { timestamps: true });
-
-MenuItemSchema.pre('findOneAndDelete', async function (next) {
-  try {
-    // Check if there are any Coupons that reference this MenuItem
-    const coupon = await this.model('Coupon').findOne({
-      $or: [
-        { purchasedItemIds: this._id },
-        { freeItemIds: this._id }
-      ]
-    });
-
-    // If a coupon is found, prevent deletion
-    if (coupon) {
-      const error = new Error('Cannot remove MenuItem because it is associated with a Coupon.');
-      return next(error);
-    }
-
-    // Cascade delete MenuItems when Location is removed
-    this.model('MenuItem').deleteMany({ locationId: this._id }, next);
-  } catch (err) {
-    next(err);
-  }
-});
 
 const MenuItem = mongoose.model('MenuItem', MenuItemSchema);
 
@@ -217,11 +168,6 @@ const CouponSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
-CouponSchema.pre('findByIdAndDelete', function (next) {
-  // Cascade delete Coupons when Location is removed
-  this.model('Coupon').deleteMany({ locationId: this._id }, next);
-});
 
 const Coupon = mongoose.model('Coupon', CouponSchema);
 
