@@ -48,7 +48,21 @@ const {
   getRedemptionsByCouponType,
 } = require('./analyticsController.js');
 
+const { uploadLocationImage, uploadMenuItemImage, uploadCouponImage } = require('./image-upload');
+
+
 const router = express.Router();
+
+
+// Route to upload location image
+router.post('/api/location/:locationId/upload', uploadLocationImage);
+
+// Route to upload menu item image
+router.post('/api/menu-item/:menuItemId/upload', uploadMenuItemImage);
+
+// Route to upload coupon image
+router.post('/api/coupon/:couponId/upload', uploadCouponImage);
+
 
 /**
  * @openapi
