@@ -17,11 +17,22 @@ const uploadToS3 = async (file, folder, res) => {
   const fileName = `${Date.now()}.${fileExtension}`;
   const key = `${folder}/${fileName}`;
 
+  // Determine the Content-Type based on the file extension
+  let contentType = 'application/octet-stream'; // Default content type (for unsupported file types)
+  if (fileExtension === 'jpeg' || fileExtension === 'jpg') {
+    contentType = 'image/jpeg';
+  } else if (fileExtension === 'png') {
+    contentType = 'image/png';
+  } else if (fileExtension === 'gif') {
+    contentType = 'image/gif';
+  }
+
   try {
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: key,
-      Body: file.buffer
+      Body: file.buffer,
+      ContentType: contentType
     });
 
     const data = await s3.send(command);
