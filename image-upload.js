@@ -1,63 +1,61 @@
 const multer = require('multer');
-const multerS3 = require('multer-s3');
-const s3 = require('./aws-config');  // The AWS S3 setup from earlier
-const Location = require('./models').Location; // Your Location model
-const MenuItem = require('./models').MenuItem; // Your MenuItem model
-const Coupon = require('./models').Coupon; // Your Coupon model
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const s3 = new S3Client({ region: process.env.AWS_REGION });  // Using the new S3 client
+const Location = require('./models').Location;
+const MenuItem = require('./models').MenuItem;
+const Coupon = require('./models').Coupon;
 
 // Set up Multer to store files in S3
 const upload = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: process.env.AWS_BUCKET_NAME,  // Your S3 bucket name from .env
-    acl: 'public-read',  // Public read access for the uploaded image
-    metadata: (req, file, cb) => {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: (req, file, cb) => {
-      // Separate folders for each resource type (Location, MenuItem, Coupon)
-      const fileExtension = file.originalname.split('.').pop();
-      let folder;
+  storage: multer.memoryStorage(),  // Store in memory before sending to S3
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
+}).single('image');  // Field name is 'image'
 
-      // Check the resource type and set the folder accordingly
-      if (req.params.locationId) {
-        folder = `locations/${req.params.locationId}`;
-      } else if (req.params.menuItemId) {
-        folder = `menu-items/${req.params.menuItemId}`;
-      } else if (req.params.couponId) {
-        folder = `coupons/${req.params.couponId}`;
-      } else {
-        return cb(new Error('No valid resource found'));
-      }
+// Function to upload the image to S3
+const uploadToS3 = async (file, folder, res) => {
+  const fileExtension = file.originalname.split('.').pop();
+  const fileName = `${Date.now()}.${fileExtension}`;
+  const key = `${folder}/${fileName}`;
 
-      // Set the file path with the folder, timestamp, and file name
-      const fileName = `${Date.now()}.${fileExtension}`;
-      cb(null, `${folder}/${fileName}`);
-    },
-  }),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB size limit
-}).single('image'); // 'image' is the field name in your form
+  try {
+    const command = new PutObjectCommand({
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: key,
+      Body: file.buffer
+    });
+
+    const data = await s3.send(command);
+    return `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/${key}`;
+  } catch (err) {
+    console.error('Error uploading to S3:', err);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
+};
 
 // API route for Location Image Upload
 const uploadLocationImage = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
+      // Return the error early if something goes wrong
       return res.status(400).json({ error: err.message });
     }
 
+    const folder = `locations/${req.params.locationId}`;
+    const imageUrl = await uploadToS3(req.file, folder, res);
+
     try {
-      // Save the S3 URL to the location's logo field
       const location = await Location.findByIdAndUpdate(
         req.params.locationId,
-        { logo: req.file.location },  // S3 URL
+        { logo: imageUrl },
         { new: true }
       );
-      res.status(200).json(location);
+      return res.status(200).json(location);  // Ensure the response is sent only once
     } catch (err) {
-      res.status(500).json({ error: 'Failed to update location' });
+      return res.status(500).json({ error: 'Failed to update location' });
     }
   });
 };
+
 
 // API route for Menu Item Image Upload
 const uploadMenuItemImage = async (req, res) => {
@@ -66,11 +64,13 @@ const uploadMenuItemImage = async (req, res) => {
       return res.status(400).json({ error: err.message });
     }
 
+    const folder = `menu-items/${req.params.menuItemId}`;
+    const imageUrl = await uploadToS3(req.file, folder, res);
+
     try {
-      // Save the S3 URL to the menu item's image field
       const menuItem = await MenuItem.findByIdAndUpdate(
         req.params.menuItemId,
-        { image: req.file.location },  // S3 URL
+        { image: imageUrl },
         { new: true }
       );
       res.status(200).json(menuItem);
@@ -87,11 +87,13 @@ const uploadCouponImage = async (req, res) => {
       return res.status(400).json({ error: err.message });
     }
 
+    const folder = `coupons/${req.params.couponId}`;
+    const imageUrl = await uploadToS3(req.file, folder, res);
+
     try {
-      // Save the S3 URL to the coupon's image field
       const coupon = await Coupon.findByIdAndUpdate(
         req.params.couponId,
-        { image: req.file.location },  // S3 URL
+        { image: imageUrl },
         { new: true }
       );
       res.status(200).json(coupon);
@@ -102,6 +104,7 @@ const uploadCouponImage = async (req, res) => {
 };
 
 module.exports = {
+  upload,
   uploadLocationImage,
   uploadMenuItemImage,
   uploadCouponImage,
