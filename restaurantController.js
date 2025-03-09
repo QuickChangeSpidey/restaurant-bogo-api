@@ -681,26 +681,29 @@ const linkUser = async (req, res, next) => {
 };
 
 // 29) Generate QR code (alternative version)
-const generateQR = async (req, res, next) => {
+const acceptPolicy = async (req, res) => {
   try {
-    const { id } = req.params;
-    const location = await Location.findById(id);
-    if (!location) {
-      return res.status(404).json({ error: 'Location not found' });
+    const { userId } = req.params; // Extract user ID from request parameters
+    const { isPolicyAccepted } = req.body; // Get new policy status from request body
+
+    if (typeof isPolicyAccepted !== 'boolean') {
+      return res.status(400).json({ message: 'Invalid value for isPolicyAccepted' });
     }
 
-    const qrCodeText = `${id}`;
-    const qrCode = await QRCode.toDataURL(qrCodeText);
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { isPolicyAccepted },
+      { new: true }
+    );
 
-    location.qrCode = qrCode;
-    await location.save();
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-    return res.status(200).json({
-      message: 'QR code generated successfully',
-      qrCode,
-    });
-  } catch (err) {
-    next(err);
+    res.json({ message: 'Policy acceptance updated', user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -850,6 +853,7 @@ module.exports = {
   // Link user
   linkUser,
 
-  // QR
-  generateQR,
+  // policy
+  acceptPolicy,
+
 };

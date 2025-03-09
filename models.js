@@ -20,6 +20,8 @@ const UserSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
   details: { type: mongoose.Schema.Types.Mixed },
 
+  isPolicyAccepted: { type: Boolean, default: false },
+
   // For Customer users who favorite specific Locations
   favoritesLocations: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Location' }],
 }, { timestamps: true });
