@@ -61,7 +61,7 @@ router.post('/api/menu-item/:menuItemId/upload', uploadMenuItemImage);
 // Route to upload coupon image
 router.post('/api/coupon/:couponId/upload', uploadCouponImage);
 
-router.put('/:userId/accept-policy', acceptPolicy);
+router.put('/api/:userId/accept-policy', acceptPolicy);
 
 /**
  * @openapi
