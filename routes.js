@@ -48,7 +48,7 @@ const {
   getRedemptionsByCouponType,
 } = require('./analyticsController.js');
 
-const { getDealsByCityAndCountry } = require('./customerController');
+const { getDealsByCityAndCountry, getLocationsByCityAndCountry, searchLocations } = require('./customerController');
 
 const { uploadLocationImage, uploadMenuItemImage, uploadCouponImage } = require('./image-upload');
 
@@ -1008,5 +1008,9 @@ router.get('/api/analytics/coupons/types', checkAuth, checkRole('Restaurant', 'A
 router.post('/api/internal-users', secureInternal, linkUser)
 
 router.get('/api/deals/:city/:country', getDealsByCityAndCountry);
+
+router.get('/api/locations/:city/:country', getLocationsByCityAndCountry);
+
+router.get('/api/locations/search/:string', searchLocations);
 
 module.exports = router;
