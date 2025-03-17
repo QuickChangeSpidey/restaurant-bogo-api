@@ -26,7 +26,7 @@ const getDealsByCityAndCountry = async (req, res) => {
 
     // Fetch all coupons associated with these locations
     const coupons = await Coupon.find({ locationId: { $in: locationIds }, isActive: true }).select(
-      '_id locationId type code discountPercentage discountValue expirationDate image'
+      '_id locationId quantity type code discountPercentage discountValue expirationDate image'
     ); // Select only necessary fields
 
     // Coupon type categories
@@ -51,6 +51,7 @@ const getDealsByCityAndCountry = async (req, res) => {
           image: coupon.image, // ✅ Use coupon image instead of location logo
           address: location?.address || 'Unknown Address',
           couponId: coupon._id,
+          quantity: coupon.quantity,
           type: coupon.type,
           code: coupon.code,
           discountPercentage: coupon.discountPercentage,
