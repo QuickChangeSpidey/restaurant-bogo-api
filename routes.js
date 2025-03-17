@@ -48,6 +48,8 @@ const {
   getRedemptionsByCouponType,
 } = require('./analyticsController.js');
 
+const { getDealsByCityAndCountry } = require('./customerController');
+
 const { uploadLocationImage, uploadMenuItemImage, uploadCouponImage } = require('./image-upload');
 
 const router = express.Router();
@@ -1004,5 +1006,7 @@ router.get('/api/analytics/redemptions/daily', checkAuth, checkRole('Restaurant'
 router.get('/api/analytics/coupons/types', checkAuth, checkRole('Restaurant', 'Admin'), getRedemptionsByCouponType);
 
 router.post('/api/internal-users', secureInternal, linkUser)
+
+router.get('/api/deals/:city/:country', getDealsByCityAndCountry);
 
 module.exports = router;
