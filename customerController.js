@@ -142,35 +142,33 @@ const searchLocations = async (req, res) => {
       return res.status(400).json({ message: "Search query is required" });
     }
 
-    // 🔹 Create a case-insensitive regex pattern for partial matches
+    // 🔹 Create case-insensitive regex
     const searchRegex = new RegExp(query, "i");
 
-    // 🔹 Find locations where either the name OR address matches the search term
+    // 🔹 Find locations where name OR address matches
     const locations = await Location.find({
       $or: [
         { name: { $regex: searchRegex } },
         { address: { $regex: searchRegex } }
       ]
-    }).select("_id name address hours");
+    }).select("_id name address hours image");
 
     if (!locations.length) {
       return res.status(404).json({ message: "No matching locations found" });
     }
 
-    // 🔹 Format the response
+    // 🔹 Format response
     const formattedLocations = locations.map(location => ({
       locationId: location._id,
       locationName: location.name,
       address: location.address,
-      businessHours: location.businessHours
+      businessHours: location.businessHours || "No hours available"
     }));
 
     return res.json({ query, results: formattedLocations });
   } catch (error) {
-    console.error("Error searching locations:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-};
-
+} ;
 
 module.exports = { getDealsByCityAndCountry, getLocationsByCityAndCountry, searchLocations };

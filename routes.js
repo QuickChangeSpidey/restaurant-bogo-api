@@ -1011,6 +1011,6 @@ router.get('/api/deals/:city/:country', getDealsByCityAndCountry);
 
 router.get('/api/locations/:city/:country', getLocationsByCityAndCountry);
 
-router.get('/api/locations/search/:string', searchLocations);
+router.get('/api/locations/query/search/:query', searchLocations);
 
 module.exports = router;
