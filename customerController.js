@@ -3,8 +3,6 @@ const { Location, Coupon } = require('./models'); // Ensure correct path
 /**
  * Fetch all deal types for a given city and country (filtered from address string).
  */
-
-
 const getDealsByCityAndCountry = async (req, res) => {
   try {
     const { city, country } = req.params;
@@ -17,7 +15,7 @@ const getDealsByCityAndCountry = async (req, res) => {
     const locations = await Location.find({
       address: { $regex: cityRegex },
       address: { $regex: countryRegex },
-    }).select('_id name logo address');
+    }).select('_id name address');
 
     if (!locations.length) {
       return res.status(404).json({ message: 'No locations found in this city and country' });
@@ -27,7 +25,9 @@ const getDealsByCityAndCountry = async (req, res) => {
     const locationIds = locations.map(loc => loc._id);
 
     // Fetch all coupons associated with these locations
-    const coupons = await Coupon.find({ locationId: { $in: locationIds }, isActive: true });
+    const coupons = await Coupon.find({ locationId: { $in: locationIds }, isActive: true }).select(
+      '_id locationId type code discountPercentage discountValue expirationDate image'
+    ); // Select only necessary fields
 
     // Coupon type categories
     const couponTypes = [
@@ -42,12 +42,14 @@ const getDealsByCityAndCountry = async (req, res) => {
     });
 
     coupons.forEach(coupon => {
+      const location = locations.find(loc => loc._id.toString() === coupon.locationId.toString());
+
       if (dealsByType[coupon.type]) {
         dealsByType[coupon.type].push({
           locationId: coupon.locationId,
-          locationName: locations.find(loc => loc._id.toString() === coupon.locationId.toString())?.name,
-          image: locations.find(loc => loc._id.toString() === coupon.locationId.toString())?.logo,
-          address: locations.find(loc => loc._id.toString() === coupon.locationId.toString())?.address,
+          locationName: location?.name || 'Unknown Location',
+          image: coupon.image, // ✅ Use coupon image instead of location logo
+          address: location?.address || 'Unknown Address',
           couponId: coupon._id,
           type: coupon.type,
           code: coupon.code,
