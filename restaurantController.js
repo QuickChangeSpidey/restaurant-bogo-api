@@ -477,14 +477,30 @@ const deleteCustomerInfo = async (req, res, next) => {
 // 21) Get all coupons for a specific location
 const getCouponsByLocationId = async (req, res, next) => {
   try {
-    const coupons = await Coupon.find({
-      locationId: req.params.locationId,
-    });
+    const coupons = await Coupon.find({ locationId: req.params.locationId })
+      .populate({
+        path: 'purchasedItemIds',
+        select: 'name'
+      })
+      .populate({
+        path: 'freeItemIds',
+        select: 'name'
+      })
+      .populate({
+        path: 'familyPackItems',
+        select: 'name'
+      })
+      .populate({
+        path: 'comboItems',
+        select: 'name'
+      });
+
     return res.status(200).json(coupons);
   } catch (err) {
     next(err);
   }
 };
+
 
 // 22) Get locations with coupons and filtering
 const getLocationsWithCoupons = async (req, res, next) => {

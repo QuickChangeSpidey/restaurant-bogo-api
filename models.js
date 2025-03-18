@@ -138,7 +138,8 @@ const CouponSchema = new mongoose.Schema(
     freeItemIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
     familyPackItems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
     familyPackPrice: { type: Number, default: 0 },
-    
+    comboItems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
+
     // For "Spend More Save More" or "Free Item with Purchase":
     minimumSpend: { type: Number, default: 0 },
     // For "Spend More Save More", you may store tiers:
@@ -154,7 +155,6 @@ const CouponSchema = new mongoose.Schema(
     endHour: { type: Number },   // e.g. 17 = 5 PM
 
     // For "ComboDeal", "FamilyPack"
-    comboItems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
     comboPrice: { type: Number, default: 0 },
     portionSize: { type: String }, // e.g. "serves 4 people"
 
