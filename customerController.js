@@ -25,10 +25,14 @@ const getDealsByCityAndCountry = async (req, res) => {
     // Extract location IDs
     const locationIds = locations.map(loc => loc._id);
 
-    // Fetch all coupons associated with these locations
-    const coupons = await Coupon.find({ locationId: { $in: locationIds }, isActive: true }).select(
-      '_id locationId quantity type code discountPercentage discountValue expirationDate image'
-    ); // Select only necessary fields
+    // Fetch all coupons associated with these locations and populate related fields
+    const coupons = await Coupon.find({ locationId: { $in: locationIds }, isActive: true })
+      .populate('purchasedItemIds', 'name') // Get item names for purchased items
+      .populate('freeItemIds', 'name')      // Get item names for free items
+      .populate('comboItems', 'name')       // Get item names for combo items
+      .select(
+        '_id locationId quantity type code comboPrice discountPercentage minimumSpend discountValue expirationDate image purchasedItemIds freeItemIds comboItems'
+      ); // Select only necessary fields
 
     // Coupon type categories
     const couponTypes = [
@@ -55,9 +59,14 @@ const getDealsByCityAndCountry = async (req, res) => {
           quantity: coupon.quantity,
           type: coupon.type,
           code: coupon.code,
+          comboPrice: coupon.comboPrice,
+          min: coupon.minimumSpend,
           discountPercentage: coupon.discountPercentage,
           discountValue: coupon.discountValue,
           expirationDate: coupon.expirationDate,
+          purchasedItems: coupon.purchasedItemIds.map(item => item.name), // List of purchased items
+          freeItems: coupon.freeItemIds.map(item => item.name),           // List of free items
+          comboItems: coupon.comboItems.map(item => item.name),           // List of combo items
         });
       }
     });
@@ -68,6 +77,7 @@ const getDealsByCityAndCountry = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 /**
  * Fetch locations in a city and country, including the number of available coupons and current day's hours.
@@ -151,18 +161,19 @@ const searchLocations = async (req, res) => {
         { name: { $regex: searchRegex } },
         { address: { $regex: searchRegex } }
       ]
-    }).select("_id name address hours image");
+    }).select("_id name address hours image coupons");
 
     if (!locations.length) {
       return res.status(404).json({ message: "No matching locations found" });
     }
 
-    // 🔹 Format response
     const formattedLocations = locations.map(location => ({
       locationId: location._id,
       locationName: location.name,
       address: location.address,
-      businessHours: location.businessHours || "No hours available"
+      image:location.logo,
+      couponCount: location.coupons.length || 0,
+      hours: location.hours || "No hours available"
     }));
 
     return res.json({ query, results: formattedLocations });
