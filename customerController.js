@@ -14,8 +14,10 @@ const getDealsByCityAndCountry = async (req, res) => {
 
     // Fetch all locations where address contains both city and country
     const locations = await Location.find({
-      address: { $regex: cityRegex },
-      address: { $regex: countryRegex },
+      $and: [
+        { address: { $regex: cityRegex } },
+        { address: { $regex: countryRegex } }
+      ]
     }).select('_id name address');
 
     if (!locations.length) {
