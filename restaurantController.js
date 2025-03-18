@@ -117,8 +117,9 @@ const generateCoupon = async (req, res, next) => {
       portionSize,
       startTime,
       endTime,
-      image,
       quantity,
+      familyPackItems,
+      familyPackPrice,
       maxUsagePerUser
     } = req.body;
 
@@ -157,6 +158,8 @@ const generateCoupon = async (req, res, next) => {
       purchasedItemIds,
       freeItemIds,
       minimumSpend,
+      familyPackItems,
+      familyPackPrice,
       spendThresholds,
       startHour,
       endHour,

@@ -134,7 +134,9 @@ const CouponSchema = new mongoose.Schema(
     // For combos, BOGO, or specific items:
     purchasedItemIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
     freeItemIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
-
+    familyPackItems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
+    familyPackPrice: { type: Number, default: 0 },
+    
     // For "Spend More Save More" or "Free Item with Purchase":
     minimumSpend: { type: Number, default: 0 },
     // For "Spend More Save More", you may store tiers:
