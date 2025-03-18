@@ -31,7 +31,7 @@ const getDealsByCityAndCountry = async (req, res) => {
       .populate('freeItemIds', 'name')      // Get item names for free items
       .populate('comboItems', 'name')       // Get item names for combo items
       .select(
-        '_id locationId quantity type code comboPrice discountPercentage minimumSpend discountValue expirationDate image purchasedItemIds freeItemIds comboItems'
+        '_id locationId quantity startTime endTime startHour endHour type code comboPrice discountPercentage minimumSpend discountValue expirationDate image purchasedItemIds freeItemIds comboItems'
       ); // Select only necessary fields
 
     // Coupon type categories
@@ -63,6 +63,10 @@ const getDealsByCityAndCountry = async (req, res) => {
           min: coupon.minimumSpend,
           discountPercentage: coupon.discountPercentage,
           discountValue: coupon.discountValue,
+          startTime: coupon.startTime,
+          endTime: coupon.endTime,
+          startHour: coupon.startHour,
+          endHour: coupon.endHour,
           expirationDate: coupon.expirationDate,
           purchasedItems: coupon.purchasedItemIds.map(item => item.name), // List of purchased items
           freeItems: coupon.freeItemIds.map(item => item.name),           // List of free items
