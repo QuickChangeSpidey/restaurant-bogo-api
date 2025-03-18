@@ -131,6 +131,8 @@ const CouponSchema = new mongoose.Schema(
       default: 0
     },
 
+    description: { type: String, default: '', required: function () { return this.type === 'LimitedTime'; } },
+
     // For combos, BOGO, or specific items:
     purchasedItemIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
     freeItemIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],

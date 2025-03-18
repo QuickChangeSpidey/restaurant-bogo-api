@@ -30,8 +30,9 @@ const getDealsByCityAndCountry = async (req, res) => {
       .populate('purchasedItemIds', 'name') // Get item names for purchased items
       .populate('freeItemIds', 'name')      // Get item names for free items
       .populate('comboItems', 'name')       // Get item names for combo items
+      .populate('familyPackItems', 'name') // ✅ Add this line
       .select(
-        '_id locationId familyPackItems familyPackPrice quantity startTime endTime startHour endHour type code comboPrice discountPercentage minimumSpend discountValue expirationDate image purchasedItemIds freeItemIds comboItems'
+        '_id locationId description familyPackItems familyPackPrice quantity startTime endTime startHour endHour type code comboPrice discountPercentage minimumSpend discountValue expirationDate image purchasedItemIds freeItemIds comboItems'
       ); // Select only necessary fields
 
     // Coupon type categories
@@ -48,7 +49,6 @@ const getDealsByCityAndCountry = async (req, res) => {
 
     coupons.forEach(coupon => {
       const location = locations.find(loc => loc._id.toString() === coupon.locationId.toString());
-      console.log('coupon:', coupon.purchasedItemIds);
 
       if (dealsByType[coupon.type]) {
         dealsByType[coupon.type].push({

@@ -117,6 +117,7 @@ const generateCoupon = async (req, res, next) => {
       portionSize,
       startTime,
       endTime,
+      description,
       quantity,
       familyPackItems,
       familyPackPrice,
@@ -167,6 +168,7 @@ const generateCoupon = async (req, res, next) => {
       comboPrice,
       portionSize,
       startTime,
+      description,
       endTime,
       quantity,
       maxUsagePerUser
