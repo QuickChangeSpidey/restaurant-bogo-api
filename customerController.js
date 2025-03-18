@@ -159,34 +159,59 @@ const searchLocations = async (req, res) => {
       return res.status(400).json({ message: "Search query is required" });
     }
 
-    // 🔹 Create case-insensitive regex
+    // 🔹 Create case-insensitive regex for search
     const searchRegex = new RegExp(query, "i");
 
-    // 🔹 Find locations where name OR address matches
-    const locations = await Location.find({
-      $or: [
-        { name: { $regex: searchRegex } },
-        { address: { $regex: searchRegex } }
-      ]
-    }).select("_id name address hours image coupons");
+    // 🔹 Fetch locations where name OR address matches, and include coupon count
+    const locations = await Location.aggregate([
+      {
+        $match: {
+          $or: [
+            { name: { $regex: searchRegex } },
+            { address: { $regex: searchRegex } }
+          ]
+        }
+      },
+      {
+        $lookup: {
+          from: "coupons",
+          localField: "_id",
+          foreignField: "locationId",
+          as: "coupons"
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          address: 1,
+          logo: 1, // ✅ Ensure location image is included
+          couponCount: { $size: { $filter: { input: "$coupons", as: "coupon", cond: { $eq: ["$$coupon.isActive", true] } } } },
+          hours: 1
+        }
+      }
+    ]);
 
     if (!locations.length) {
       return res.status(404).json({ message: "No matching locations found" });
     }
 
+    // Format response
     const formattedLocations = locations.map(location => ({
       locationId: location._id,
       locationName: location.name,
       address: location.address,
-      image:location.logo,
-      couponCount: location.coupons.length || 0,
+      image: location.logo || "https://via.placeholder.com/100", // ✅ Fallback image if missing
+      couponCount: location.couponCount || 0, // ✅ Accurate coupon count
       hours: location.hours || "No hours available"
     }));
 
     return res.json({ query, results: formattedLocations });
   } catch (error) {
+    console.error("Error searching locations:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-} ;
+};
+
 
 module.exports = { getDealsByCityAndCountry, getLocationsByCityAndCountry, searchLocations };
