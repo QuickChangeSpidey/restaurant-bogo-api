@@ -762,6 +762,71 @@ const getLocationsByRestaurant = async (req, res, next) => {
   }
 };
 
+const getLocationsByGenre = async (req, res, next) => {
+  try {
+    const { lat, long, radius = 5000 } = req.query; // Default radius 5km
+
+    if (!lat || !long) {
+      return res.status(400).json({ message: "Latitude and longitude are required." });
+    }
+
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(long);
+
+    if (isNaN(latitude) || isNaN(longitude)) {
+      return res.status(400).json({ message: "Invalid latitude or longitude." });
+    }
+
+    // 🔍 Find locations within the given radius using geospatial query
+    const locations = await Location.find({
+      geolocation: {
+        $near: {
+          $geometry: { type: "Point", coordinates: [longitude, latitude] },
+          $maxDistance: parseInt(radius) // Distance in meters
+        }
+      }
+    }).select("name logo genre address coupons");
+
+    if (!locations.length) {
+      return res.status(404).json({ message: "No restaurants found nearby." });
+    }
+
+    // 📌 Group locations by genre & calculate coupon count
+    const groupedByGenre = locations.reduce((acc, location) => {
+      if (!location.genre || location.genre.length === 0) return acc;
+
+      location.genre.forEach((genre) => {
+        if (!acc[genre]) {
+          acc[genre] = {
+            totalCoupons: 0,
+            restaurants: []
+          };
+        }
+
+        const couponCount = location.coupons ? location.coupons.length : 0;
+        acc[genre].totalCoupons += couponCount;
+
+        acc[genre].restaurants.push({
+          id: location._id,
+          name: location.name,
+          logo: location.logo,
+          address: location.address,
+          couponCount
+        });
+      });
+
+      return acc;
+    }, {});
+
+    res.json({ restaurants: groupedByGenre });
+
+  } catch (error) {
+    console.error("Error fetching restaurants:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+
 // 31) Get a specific location by ID
 const getLocation = async (req, res, next) => {
   try {
@@ -876,5 +941,5 @@ module.exports = {
 
   // policy
   acceptPolicy,
-
+  getLocationsByGenre
 };

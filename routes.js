@@ -6,6 +6,7 @@ const {
   deleteLocation,
   getLocation,
   getLocationsByRestaurant,
+  getLocationsByGenre,
   addMenuItem,
   updateMenuItem,
   deleteMenuItem,
@@ -1009,6 +1010,8 @@ router.post('/api/menu-item/:menuItemId/upload', uploadMenuItemImage);
 router.post('/api/coupon/:couponId/upload', uploadCouponImage);
 
 router.get('/api/map-locations/query', getNearbyLocations);
+
+router.get('/api/restaurant-locations/query', getLocationsByGenre);
 
 router.put('/api/:userId/accept-policy', checkAuth, checkRole('Restaurant', 'Admin', 'Customer'), acceptPolicy);
 
