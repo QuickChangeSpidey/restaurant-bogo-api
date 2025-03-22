@@ -1,6 +1,57 @@
 const { Location, Coupon } = require('./models');
 const moment = require('moment-timezone');
 
+const getNearbyLocations = async (req, res) => {
+  try {
+      const { lat, long, radius = 5000 } = req.query; // Default radius 5km
+
+      if (!lat || !long) {
+          return res.status(400).json({ message: "Latitude and longitude are required." });
+      }
+
+      // Convert lat and long to numbers
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(long);
+
+      if (isNaN(latitude) || isNaN(longitude)) {
+          return res.status(400).json({ message: "Invalid latitude or longitude." });
+      }
+
+      // Find locations within the radius
+      const locations = await Location.find({
+          geolocation: {
+              $near: {
+                  $geometry: { type: "Point", coordinates: [longitude, latitude] },
+                  $maxDistance: parseInt(radius) // Distance in meters
+              }
+          }
+      }).select('name logo _id geolocation logo');
+
+      if (!locations.length) {
+          return res.status(404).json({ message: "No locations found nearby." });
+      }
+
+      // Fetch coupon counts for each location
+      const locationsWithCoupons = await Promise.all(locations.map(async (location) => {
+          const couponCount = await Coupon.countDocuments({ locationId: location._id, isActive: true });
+          return {
+              id: location._id,
+              name: location.name,
+              logo: location.logo,
+              couponCount,
+              coordinates: location.geolocation.coordinates,
+              logo: location.logo
+          };
+      }));
+
+      res.json({ locations: locationsWithCoupons });
+
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error." });
+  }
+};
+
 /**
  * Fetch all deal types for a given city and country (filtered from address string).
  */
@@ -210,10 +261,9 @@ const searchLocations = async (req, res) => {
 
     return res.json({ query, results: formattedLocations });
   } catch (error) {
-    console.error("Error searching locations:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
 
-module.exports = { getDealsByCityAndCountry, getLocationsByCityAndCountry, searchLocations };
+module.exports = { getDealsByCityAndCountry, getLocationsByCityAndCountry, searchLocations, getNearbyLocations };

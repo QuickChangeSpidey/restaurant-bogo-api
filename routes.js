@@ -48,22 +48,11 @@ const {
   getRedemptionsByCouponType,
 } = require('./analyticsController.js');
 
-const { getDealsByCityAndCountry, getLocationsByCityAndCountry, searchLocations } = require('./customerController');
+const { getDealsByCityAndCountry, getLocationsByCityAndCountry, searchLocations, getNearbyLocations } = require('./customerController');
 
 const { uploadLocationImage, uploadMenuItemImage, uploadCouponImage } = require('./image-upload');
 
 const router = express.Router();
-
-// Route to upload location image
-router.post('/api/location/:locationId/upload', uploadLocationImage);
-
-// Route to upload menu item image
-router.post('/api/menu-item/:menuItemId/upload', uploadMenuItemImage);
-
-// Route to upload coupon image
-router.post('/api/coupon/:couponId/upload', uploadCouponImage);
-
-router.put('/api/:userId/accept-policy', checkAuth, checkRole('Restaurant', 'Admin','Customer'), acceptPolicy);
 
 /**
  * @openapi
@@ -1012,5 +1001,15 @@ router.get('/api/deals/:city/:country', getDealsByCityAndCountry);
 router.get('/api/locations/:city/:country', getLocationsByCityAndCountry);
 
 router.get('/api/locations/query/search/:query', searchLocations);
+
+router.post('/api/location/:locationId/upload', uploadLocationImage);
+
+router.post('/api/menu-item/:menuItemId/upload', uploadMenuItemImage);
+
+router.post('/api/coupon/:couponId/upload', uploadCouponImage);
+
+router.get('/api/map-locations/query', getNearbyLocations);
+
+router.put('/api/:userId/accept-policy', checkAuth, checkRole('Restaurant', 'Admin', 'Customer'), acceptPolicy);
 
 module.exports = router;
