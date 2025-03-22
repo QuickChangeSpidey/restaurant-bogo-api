@@ -762,70 +762,70 @@ const getLocationsByRestaurant = async (req, res, next) => {
   }
 };
 
-const getLocationsByGenre = async (req, res, next) => {
+const getLocationsByGenre = async (req, res) => {
   try {
-    const { lat, long, radius = 5000 } = req.query; // Default radius 5km
+    const { lat, long, maxDistance = 5000 } = req.query;
 
     if (!lat || !long) {
-      return res.status(400).json({ message: "Latitude and longitude are required." });
+      return res.status(400).json({ error: 'Latitude and Longitude are required.' });
     }
 
-    const latitude = parseFloat(lat);
-    const longitude = parseFloat(long);
-
-    if (isNaN(latitude) || isNaN(longitude)) {
-      return res.status(400).json({ message: "Invalid latitude or longitude." });
-    }
-
-    // 🔍 Find locations within the given radius using geospatial query
-    const locations = await Location.find({
+    // Step 1: Get locations near lat/long
+    const nearbyLocations = await Location.find({
       geolocation: {
         $near: {
-          $geometry: { type: "Point", coordinates: [longitude, latitude] },
-          $maxDistance: parseInt(radius) // Distance in meters
+          $geometry: {
+            type: 'Point',
+            coordinates: [parseFloat(long), parseFloat(lat)],
+          },
+          $maxDistance: parseInt(maxDistance), // in meters
         }
       }
-    }).select("name logo genre address coupons");
+    })
+      .populate('menu')
+      .populate('ads')
+      .lean();
 
-    if (!locations.length) {
-      return res.status(404).json({ message: "No restaurants found nearby." });
+    // Step 2: Get all coupon documents linked to these locations
+    const locationIds = nearbyLocations.map(loc => loc._id);
+    const allCoupons = await Coupon.find({ locationId: { $in: locationIds } }).lean();
+
+    // Step 3: Attach coupons to each location manually
+    const couponsByLocation = {};
+    allCoupons.forEach(coupon => {
+      const locId = coupon.locationId.toString();
+      if (!couponsByLocation[locId]) couponsByLocation[locId] = [];
+      couponsByLocation[locId].push(coupon);
+    });
+
+    const enrichedLocations = nearbyLocations.map(location => {
+      const locIdStr = location._id.toString();
+      const coupons = couponsByLocation[locIdStr] || [];
+      return {
+        ...location,
+        coupons,
+        couponCount: coupons.length,
+      };
+    });
+
+    // Step 4: Group by genre
+    const genreGroups = {};
+
+    for (const location of enrichedLocations) {
+      for (const genre of location.genre) {
+        if (!genreGroups[genre]) {
+          genreGroups[genre] = [];
+        }
+        genreGroups[genre].push(location);
+      }
     }
 
-    // 📌 Group locations by genre & calculate coupon count
-    const groupedByGenre = locations.reduce((acc, location) => {
-      if (!location.genre || location.genre.length === 0) return acc;
-
-      location.genre.forEach((genre) => {
-        if (!acc[genre]) {
-          acc[genre] = {
-            totalCoupons: 0,
-            restaurants: []
-          };
-        }
-
-        const couponCount = location.coupons ? location.coupons.length : 0;
-        acc[genre].totalCoupons += couponCount;
-
-        acc[genre].restaurants.push({
-          id: location._id,
-          name: location.name,
-          logo: location.logo,
-          address: location.address,
-          couponCount
-        });
-      });
-
-      return acc;
-    }, {});
-
-    res.json({ restaurants: groupedByGenre });
-
-  } catch (error) {
-    console.error("Error fetching restaurants:", error);
-    res.status(500).json({ message: "Internal server error." });
+    return res.json(genreGroups);
+  } catch (err) {
+    console.error('Error in getLocationsByGenre:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
-
 
 // 31) Get a specific location by ID
 const getLocation = async (req, res, next) => {

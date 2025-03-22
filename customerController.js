@@ -3,7 +3,7 @@ const moment = require('moment-timezone');
 
 const getNearbyLocations = async (req, res) => {
   try {
-      const { lat, long, radius = 5000 } = req.query; // Default radius 5km
+      const { lat, long, radius = 10000 } = req.query; // Default radius 5km
 
       if (!lat || !long) {
           return res.status(400).json({ message: "Latitude and longitude are required." });
